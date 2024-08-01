@@ -5,8 +5,8 @@ import graficos  # Importar el archivo graficos.py
 import ver_tabla  # Importar el archivo ver_tabla.py
 import IA  # Importar el archivo IA.py
 import inicio  # Importar el archivo inicio.py
+import Cuestionario  # Importar el archivo Cuestionario.py
 import time  # Importar el módulo time para actualizar la hora y la fecha
-
 
 class MainApp(tk.Tk):
     def __init__(self):
@@ -132,6 +132,16 @@ class MainApp(tk.Tk):
                                   fg=self.colors['text'])
         self.Exit_text.pack(pady=(0, 20), anchor='center')
 
+        # Cuestionario
+        self.quizImage = ImageTk.PhotoImage(file='images/quiz-icon.png')  # Asegúrate de tener el icono correcto
+        self.quiz = tk.Button(self.sidebar, image=self.quizImage, bg=self.colors['sidebar'], bd=0,
+                              cursor='hand2', activebackground=self.colors['sidebar'],
+                              command=lambda: self.on_button_click("Cuestionario"))
+        self.quiz.pack(pady=5, anchor='center')
+        self.quiz_text = tk.Label(self.sidebar, text="Cuestionario", bg=self.colors['sidebar'], font=("", 13, "bold"),
+                                  fg=self.colors['text'])
+        self.quiz_text.pack(pady=(0, 20), anchor='center')
+
     def create_main_content(self):
         # Destruye los widgets anteriores en el contenido principal
         for widget in self.main_content_widgets:
@@ -172,12 +182,9 @@ class MainApp(tk.Tk):
             # Llamar a la función para mostrar gráficos
             self.mostrar_graficos_modelo_matematico(scrollable_frame)
         elif self.current_page == "IA":
-            # Crear un frame para el contenido del archivo IA.py
             frame = tk.Frame(self.main_content, bg="white" if not self.dark_mode else "#222")
-            frame.pack(expand=True, fill=tk.BOTH, padx=10, pady=10)  # Añadir padding para un mejor espaciado
+            frame.pack(expand=True, fill=tk.BOTH, padx=10, pady=10)
             self.main_content_widgets.append(frame)
-
-            # Llamar a la función principal del archivo IA.py
             IA.main(frame)
         elif self.current_page == "Reportes":
             # Crear un frame para el contenido del archivo ver_tabla.py
@@ -187,68 +194,14 @@ class MainApp(tk.Tk):
 
             # Llamar a la función principal del archivo ver_tabla.py
             ver_tabla.main(frame)
+        elif self.current_page == "Cuestionario":
+            # Crear un frame para el contenido del cuestionario
+            frame = tk.Frame(self.main_content, bg="white" if not self.dark_mode else "#222")
+            frame.pack(expand=True, fill=tk.BOTH, padx=10, pady=10)  # Añadir padding para un mejor espaciado
+            self.main_content_widgets.append(frame)
 
-        # Aplicar modo oscuro a la nueva página
-        self.apply_dark_mode()
-
-    def toggle_dark_mode(self, event=None):
-        # Cambia el estado de modo oscuro
-        self.dark_mode = not self.dark_mode
-        self.apply_dark_mode()
-
-    def apply_dark_mode(self):
-        if self.dark_mode:
-            sidebar_bg_color = "#333"  # Color de fondo del panel lateral en modo oscuro
-            main_content_bg_color = "#222"  # Color de fondo del contenido principal en modo oscuro
-            text_color = "#fff"  # Color de texto en modo oscuro
-            button_bg_color = "#000"  # Color de fondo de los botones en modo oscuro
-            button_fg_color = "#fff"  # Color de texto de los botones en modo oscuro
-
-            # Mover el círculo del botón al lado derecho (modo oscuro)
-            if self.toggle_dark_mode_btn.winfo_exists():
-                self.toggle_dark_mode_btn.itemconfig(self.toggle_button_circle, fill="#444")
-                self.toggle_dark_mode_btn.coords(self.toggle_button_circle, 27, 2, 48, 23)
-                self.toggle_dark_mode_btn.configure(bg="#333")
-        else:
-            sidebar_bg_color = "#4CAF50"  # Color de fondo del panel lateral en modo claro
-            main_content_bg_color = "#fff"  # Color de fondo del contenido principal en modo claro
-            text_color = "#000"  # Color de texto en modo claro
-            button_bg_color = "#4CAF50"  # Color de fondo de los botones en modo claro
-            button_fg_color = "#000"  # Color de texto de los botones en modo claro
-
-            # Mover el círculo del botón al lado izquierdo (modo claro)
-            if self.toggle_dark_mode_btn.winfo_exists():
-                self.toggle_dark_mode_btn.itemconfig(self.toggle_button_circle, fill="white")
-                self.toggle_dark_mode_btn.coords(self.toggle_button_circle, 2, 2, 23, 23)
-                self.toggle_dark_mode_btn.configure(bg="#ccc")
-
-        # Actualizar los colores del panel lateral
-        if self.sidebar.winfo_exists():
-            self.sidebar.configure(bg=sidebar_bg_color)
-
-        # Actualizar los colores del contenido principal
-        if self.main_content.winfo_exists():
-            self.main_content.configure(bg=main_content_bg_color)
-            for widget in self.main_content_widgets:
-                if isinstance(widget, (tk.Label, tk.Button)) and widget.winfo_exists():
-                    widget.configure(bg=main_content_bg_color, fg=text_color)
-                elif isinstance(widget, (tk.Frame, tk.Canvas)) and widget.winfo_exists():  # Añadir Canvas a la lista
-                    widget.configure(bg=main_content_bg_color)
-
-        # Actualizar los colores de los botones del menú lateral
-        for widget in self.sidebar.winfo_children():
-            if isinstance(widget, tk.Button) and widget.winfo_exists():
-                widget.configure(bg=button_bg_color, fg=button_fg_color)
-            elif isinstance(widget, tk.Label) and widget.winfo_exists():
-                widget.configure(bg=sidebar_bg_color, fg=text_color)
-
-        # Actualizar hora y fecha
-        self.update_date_time_color()
-
-    def on_button_click(self, button_text):
-        # Actualizar la página actual y crear contenido principal
-        self.current_page = button_text
-        self.create_main_content()
+            # Llamar a la función principal del archivo Cuestionario.py
+            Cuestionario.main(frame)
 
     def mostrar_graficos_modelo_matematico(self, parent):
         try:
@@ -258,28 +211,55 @@ class MainApp(tk.Tk):
             graficos.mostrar_grafico_af_plantas_agua(parent, self.main_content_widgets)
             graficos.mostrar_grafico_af_plantas_tierra(parent, self.main_content_widgets)
             graficos.mostrar_grafico_regresion_polynomial(parent, self.main_content_widgets)
-
         except ValueError as e:
             print(f"Error al mostrar gráficos: {e}")
 
-    def show_time(self):
-        self.time = time.strftime("%H:%M:%S")
-        self.date = time.strftime('%Y/%m/%d')
-        set_text = f"  {self.time} \n {self.date}"
-        self.date_time.configure(text=set_text, font=("", 13, "bold"), bd=0, bg=self.colors['sidebar'],
-                                 fg=self.colors['text'])
-        self.date_time.after(1000, self.show_time)  # Actualiza cada segundo
+    def on_button_click(self, page_name):
+        self.current_page = page_name
+        self.create_main_content()
 
-    def update_date_time_color(self):
-        # Este método actualizará el color de la hora y la fecha según el modo actual
+    def apply_dark_mode(self):
         self.colors = {
-            'sidebar': '#4CAF50' if not self.dark_mode else '#333',
+            'sidebar': '#333' if self.dark_mode else '#4CAF50',
             'text': '#fff' if self.dark_mode else '#000',
-            'bg': '#fff' if not self.dark_mode else '#222',
-            'fg': '#000' if not self.dark_mode else '#fff'
+            'bg': '#222' if self.dark_mode else '#fff',
+            'fg': '#fff' if self.dark_mode else '#000'
         }
-        self.date_time.configure(bg=self.colors['sidebar'], fg=self.colors['text'])
 
+        self.sidebar.config(bg=self.colors['sidebar'])
+        self.main_content.config(bg=self.colors['bg'])
+        self.date_time.config(bg=self.colors['sidebar'], fg=self.colors['text'])
+        self.logo.config(bg=self.colors['sidebar'])
+        self.brandName.config(bg=self.colors['sidebar'], fg=self.colors['text'])
+        self.dashboard.config(bg=self.colors['sidebar'], activebackground=self.colors['sidebar'])
+        self.dashboard_text.config(bg=self.colors['sidebar'], fg=self.colors['text'])
+        self.manage.config(bg=self.colors['sidebar'], activebackground=self.colors['sidebar'])
+        self.manage_text.config(bg=self.colors['sidebar'], fg=self.colors['text'])
+        self.settings.config(bg=self.colors['sidebar'], activebackground=self.colors['sidebar'])
+        self.settings_text.config(bg=self.colors['sidebar'], fg=self.colors['text'])
+        self.Exit.config(bg=self.colors['sidebar'], activebackground=self.colors['sidebar'])
+        self.Exit_text.config(bg=self.colors['sidebar'], fg=self.colors['text'])
+        self.quiz.config(bg=self.colors['sidebar'], activebackground=self.colors['sidebar'])
+        self.quiz_text.config(bg=self.colors['sidebar'], fg=self.colors['text'])
+
+    def toggle_dark_mode(self, event=None):
+        self.dark_mode = not self.dark_mode
+        self.apply_dark_mode()
+        self.create_main_content()  # Volver a crear el contenido principal para aplicar el modo oscuro
+
+        # Cambiar la posición del círculo del botón de modo oscuro
+        if self.dark_mode:
+            self.toggle_dark_mode_btn.coords(self.toggle_button_circle, 25, 2, 46, 23)
+            self.toggle_dark_mode_btn.config(bg="#555")
+        else:
+            self.toggle_dark_mode_btn.coords(self.toggle_button_circle, 2, 2, 23, 23)
+            self.toggle_dark_mode_btn.config(bg="#ccc")
+
+    def show_time(self):
+        current_time = time.strftime("%H:%M")
+        current_date = time.strftime("%d/%m/%Y")
+        self.date_time.config(text=f"{current_time}\n{current_date}")
+        self.after(1000, self.show_time)  # Actualizar cada segundo
 
 if __name__ == "__main__":
     app = MainApp()
