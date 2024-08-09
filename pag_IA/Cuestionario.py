@@ -72,7 +72,7 @@ def save_data():
             password="Yamile25",
             host="localhost",
             port="5432",
-            database="Hidroponia"
+            database="Lestoma"
         )
         cursor = conn.cursor()
 
@@ -100,6 +100,8 @@ def save_data():
             INSERT INTO "Hidroponia"."TBFoto" ("PKIdFoto", "Nombre", "Ruta", "Descripcion")
             VALUES (%s, %s, %s, %s);
             """, (id_foto, nombre_foto, ruta_foto, descripcion_foto))
+        else:
+            id_foto = None  # Si no hay foto, asegurarse de que id_foto sea None
 
         # Insertar en TBDatos
         cursor.execute("""
@@ -111,7 +113,7 @@ def save_data():
         cursor.execute("""
         INSERT INTO "Hidroponia"."TBReporte" ("PKIdReporte", "FKIdDatos", "FKIdFoto")
         VALUES (%s, %s, %s);
-        """, (id_reporte, id_datos, id_foto if nombre_foto else None))
+        """, (id_reporte, id_datos, id_foto))
 
         # Confirmar cambios
         conn.commit()
@@ -211,4 +213,4 @@ def main(frame):
     for i in range(1, 6):
         container.columnconfigure(i, weight=1)
 
-# Aquí deberías tener el código para crear la ventana principal y llamar a main()
+
