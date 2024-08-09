@@ -155,7 +155,7 @@ def main(frame):
     container = ttk.Frame(frame, padding="50")
     container.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
-    font_large = ("Helvetica", 20)
+    font_large = ("Helvetica", 30)
 
     ttk.Label(container, text="Tipo de Siembra:", font=font_large).grid(row=1, column=1, sticky=tk.W)
     siembra_var = tk.StringVar(value="Agua")
