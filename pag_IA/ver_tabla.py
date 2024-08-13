@@ -1,14 +1,11 @@
 import tkinter as tk
-from tkinter import ttk, simpledialog, messagebox, filedialog
+from tkinter import ttk, simpledialog, messagebox
 import psycopg2
-import os
-import shutil
+import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
-import datetime
-
 
 def main(root):
     # Establecer la conexión con PostgreSQL
@@ -30,10 +27,10 @@ def main(root):
             JOIN "Hidroponia"."TBTipoSiembra" S ON L."FKIdTipSiembra" = S."PKIdTipSiembra"
             JOIN "Hidroponia"."TBTipoLechuga" T ON L."FKIdTipoLechuga" = T."PKIdTipoLechuga"
             JOIN "Hidroponia"."TBDatos" D ON L."PKIdLechuga" = D."FKIdLechuga"
-            LEFT JOIN "Hidroponia"."TBFoto" F ON D."PKIdDatos" = F."PKIdFoto"
+            LEFT JOIN "Hidroponia"."TBReporte" R ON D."PKIdDatos" = R."FKIdDatos"
+            LEFT JOIN "Hidroponia"."TBFoto" F ON R."FKIdFoto" = F."PKIdFoto"
         """)
         data = cur.fetchall()
-        print(data)  # Agrega esta línea para depurar
         return data
 
     # Función para mostrar los datos en la tabla
@@ -42,6 +39,8 @@ def main(root):
         for row in tabla.get_children():
             tabla.delete(row)
         for record in data:
+            # Reemplazar None o valores vacíos con guiones
+            record = tuple('-' if v is None or v == '' else v for v in record)
             tabla.insert("", "end", values=record)
 
     # Función para ver los detalles de un registro
@@ -49,6 +48,8 @@ def main(root):
         try:
             item_selected = tabla.selection()[0]
             data = tabla.item(item_selected, "values")
+            # Reemplazar vacíos con guiones en los detalles
+            data = tuple('-' if v == '' else v for v in data)
             messagebox.showinfo("Detalles del Registro",
                                 f"ID: {data[0]}\nTipo de Siembra: {data[1]}\nUbicación: {data[2]}"
                                 f"\nTipo de Lechuga: {data[3]}\nÁrea Foliar: {data[4]}"
@@ -58,55 +59,48 @@ def main(root):
         except IndexError:
             messagebox.showwarning("Advertencia", "Por favor selecciona un registro primero.")
 
-    # Función para ver los detalles de un registro
-    def ver_detalles(event=None):
-        try:
-            item_selected = tabla.selection()[0]
-            data = tabla.item(item_selected, "values")
-            messagebox.showinfo("Detalles del Registro",
-                                f"ID: {data[0]}\nTipo de Siembra: {data[1]}\nUbicación: {data[2]}"
-                                f"\nTipo de Lechuga: {data[3]}\nÁrea Foliar: {data[4]}"
-                                f"\nAltura: {data[5]}\nSemana: {data[6]}\nNúmero de Siembra: {data[7]}"
-                                f"\nObservaciones: {data[8]}\nNombre Foto: {data[9]}"
-                                f"\nRuta Foto: {data[10]}\nDescripción Foto: {data[11]}")
-        except IndexError:
-            messagebox.showwarning("Advertencia", "Por favor selecciona un registro primero.")
     # Función para eliminar un registro
     def eliminar_registro():
-        item_selected = tabla.selection()[0]
-        lechuga_id = tabla.item(item_selected, "values")[0]
-        confirm = messagebox.askyesno("Confirmar", "¿Estás seguro de eliminar este registro?")
-        if confirm:
-            cur.execute('DELETE FROM "Hidroponia"."TBLechuga" WHERE "PKIdLechuga" = %s', (lechuga_id,))
-            conn.commit()
-            show_data()
+        try:
+            item_selected = tabla.selection()[0]
+            lechuga_id = tabla.item(item_selected, "values")[0]
+            confirm = messagebox.askyesno("Confirmar", "¿Estás seguro de eliminar este registro?")
+            if confirm:
+                cur.execute('DELETE FROM "Hidroponia"."TBLechuga" WHERE "PKIdLechuga" = %s', (lechuga_id,))
+                conn.commit()
+                show_data()
+        except IndexError:
+            messagebox.showwarning("Advertencia", "Por favor selecciona un registro primero.")
 
     # Función para actualizar un registro
     def actualizar_registro():
-        item_selected = tabla.selection()[0]
-        lechuga_id = tabla.item(item_selected, "values")[0]
-        data = tabla.item(item_selected, "values")
+        try:
+            item_selected = tabla.selection()[0]
+            lechuga_id = tabla.item(item_selected, "values")[0]
+            data = tabla.item(item_selected, "values")
 
-        # Solicitar nueva información
-        new_af = simpledialog.askstring("Actualizar Registro", "Nueva Área Foliar (cm2):", parent=root,
-                                        initialvalue=data[4])
-        new_h = simpledialog.askstring("Actualizar Registro", "Nueva Altura (cm):", parent=root, initialvalue=data[5])
-        new_semana = simpledialog.askstring("Actualizar Registro", "Nueva Semana:", parent=root, initialvalue=data[6])
-        new_num_cosecha = simpledialog.askstring("Actualizar Registro", "Nuevo Número de Siembra:", parent=root,
-                                                 initialvalue=data[7])
-        new_observaciones = simpledialog.askstring("Actualizar Registro", "Nuevas Observaciones:", parent=root,
-                                                   initialvalue=data[8])
+            # Solicitar nueva información
+            new_af = simpledialog.askstring("Actualizar Registro", "Nueva Área Foliar (cm2):", parent=root,
+                                            initialvalue=data[4])
+            new_h = simpledialog.askstring("Actualizar Registro", "Nueva Altura (cm):", parent=root, initialvalue=data[5])
+            new_semana = simpledialog.askstring("Actualizar Registro", "Nueva Semana:", parent=root, initialvalue=data[6])
+            new_num_cosecha = simpledialog.askstring("Actualizar Registro", "Nuevo Número de Siembra:", parent=root,
+                                                     initialvalue=data[7])
+            new_observaciones = simpledialog.askstring("Actualizar Registro", "Nuevas Observaciones:", parent=root,
+                                                       initialvalue=data[8])
 
-        if new_af and new_h and new_semana and new_num_cosecha and new_observaciones:
-            cur.execute("""
-                UPDATE "Hidroponia"."TBDatos"
-                SET "AF" = %s, "H" = %s, "Semana" = %s, "Num_cosecha" = %s, "Observaciones" = %s
-                WHERE "FKIdLechuga" = %s
-            """, (new_af, new_h, new_semana, new_num_cosecha, new_observaciones, lechuga_id))
-            conn.commit()
-            show_data()
-        else:
-            messagebox.showerror("Error", "Todos los campos son obligatorios.")
+            if new_af and new_h and new_semana and new_num_cosecha and new_observaciones:
+                cur.execute("""
+                    UPDATE "Hidroponia"."TBDatos"
+                    SET "AF" = %s, "H" = %s, "Semana" = %s, "Num_cosecha" = %s, "Observaciones" = %s
+                    WHERE "FKIdLechuga" = %s
+                """, (new_af, new_h, new_semana, new_num_cosecha, new_observaciones, lechuga_id))
+                conn.commit()
+                show_data()
+            else:
+                messagebox.showerror("Error", "Todos los campos son obligatorios.")
+        except IndexError:
+            messagebox.showwarning("Advertencia", "Por favor selecciona un registro primero.")
 
     # Función para generar el reporte en PDF
     def generar_reporte():
@@ -122,6 +116,8 @@ def main(root):
         table_data = [["ID", "Tipo de Siembra", "Ubicación", "Tipo de Lechuga", "Área Foliar", "Altura", "Semana",
                        "Número de Siembra", "Observaciones", "Nombre Foto", "Ruta Foto", "Descripción Foto"]]
         for record in data:
+            # Reemplazar None o valores vacíos con guiones en el reporte
+            record = tuple('-' if v is None or v == '' else v for v in record)
             table_data.append(record)
 
         table = Table(table_data)
@@ -203,5 +199,3 @@ def main(root):
     # Cerrar la conexión con PostgreSQL
     cur.close()
     conn.close()
-
-
