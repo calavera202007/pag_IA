@@ -1,37 +1,88 @@
 import tkinter as tk
 from tkinter import messagebox
 import time
+import psycopg2
+import hashlib
+import re  # Importar el módulo de expresiones regulares
+import os  # Importar el módulo os para ejecutar el menú
 
-# Función para validar las credenciales
-def login():
+# Función para validar si es una dirección de correo válida
+def is_valid_email(email):
+    pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    return re.match(pattern, email) is not None
+
+# Función para validar el tiempo entre teclas
+def is_robot_detected(entry):
+    return time.time() - entry.last_modified < 0.5
+
+# Función para conectar y verificar credenciales
+def verify_credentials(username, password):
     try:
-        username = entry_username.get()
-        password = entry_password.get()
+        # Conexión a la base de datos PostgreSQL
+        conn = psycopg2.connect(
+            user="postgres",
+            password="Yamile25",
+            host="localhost",
+            port="5432",
+            database="Lestoma"
+        )
+        cursor = conn.cursor()
 
-        # Verificación de la casilla "No soy un robot"
-        if not var_no_robot.get():
-            raise Exception("Por favor, confirme que no es un robot.")
+        # Codificar la contraseña ingresada con SHA-512
+        encoded_password = hashlib.sha512(password.encode()).hexdigest()
 
-        # Simulación de una detección de robot (si el tiempo entre el último ingreso de texto es muy corto)
-        if (time.time() - entry_username.last_modified < 0.5) or (time.time() - entry_password.last_modified < 0.5):
-            raise Exception("Acción sospechosa detectada. Podría ser un robot.")
+        # Consulta para verificar las credenciales
+        cursor.execute("""
+            SELECT 1 
+            FROM "Super Administrador"."Usuario" 
+            WHERE "Usuario"."UsrCorreo" = %s AND "Usuario"."UsrContrasenna" = %s
+        """, (username, encoded_password))
 
-        # Validaciones básicas
-        if len(username) == 0 or len(password) == 0:
-            messagebox.showerror("Error", "Por favor, ingrese un nombre de usuario y una contraseña.")
-        elif not username.endswith("@ucundinamarca.edu.co"):
-            messagebox.showerror("Error", "El correo debe terminar en @ucundinamarca.edu.co.")
-        elif username != "admin@ucundinamarca.edu.co" or password != "admin123":
-            messagebox.showerror("Error", "Nombre de usuario o contraseña incorrectos.")
-        else:
-            messagebox.showinfo("Éxito", "Inicio de sesión exitoso.")
+        # Si se encuentra una coincidencia, devolver True
+        result = cursor.fetchone()
+        conn.close()
 
-    except Exception as e:
-        messagebox.showerror("Error", str(e))
+        return result is not None
+
+    except (Exception, psycopg2.Error) as error:
+        messagebox.showerror("Error", f"Error al conectarse a la base de datos: {error}")
+        return False
+
+# Función para validar las credenciales y el captcha
+def login():
+    username = entry_username.get()
+    password = entry_password.get()
+
+    if not var_no_robot.get():
+        messagebox.showerror("Error", "Por favor, confirme que no es un robot.")
+        return
+
+    if is_robot_detected(entry_username) or is_robot_detected(entry_password):
+        messagebox.showerror("Error", "Acción sospechosa detectada. Podría ser un robot.")
+        return
+
+    if len(username) == 0 or len(password) == 0:
+        messagebox.showerror("Error", "Por favor, ingrese un nombre de usuario y una contraseña.")
+    elif not is_valid_email(username):
+        messagebox.showerror("Error", "Por favor, ingrese una dirección de correo válida.")
+    elif not verify_credentials(username, password):
+        messagebox.showerror("Error", "Nombre de usuario o contraseña incorrectos.")
+    else:
+        messagebox.showinfo("Éxito", "Inicio de sesión exitoso.")
+        root.destroy()  # Cerrar la ventana de inicio de sesión
+        os.system('python Menu.py')  # Ejecutar el archivo Menu.py
+
 
 # Función para actualizar el tiempo de modificación
 def on_entry_change(event, entry):
     entry.last_modified = time.time()
+
+# Función para mostrar u ocultar la contraseña
+def toggle_password_visibility():
+    if show_password_var.get():
+        entry_password.config(show="")
+    else:
+        entry_password.config(show="*")
 
 # Configuración de la ventana principal
 root = tk.Tk()
@@ -46,7 +97,7 @@ background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
 # Configuración del frame de login
 login_frame = tk.Frame(root, bg="#FFFFFF", bd=2, relief="groove")
-login_frame.place(x=150, y=100, width=300, height=220)
+login_frame.place(x=150, y=100, width=300, height=260)
 
 # Título del login
 title_label = tk.Label(login_frame, text="Iniciar Sesión", font=("Arial", 14, "bold"), bg="#FFFFFF")
@@ -68,14 +119,19 @@ entry_password.grid(row=2, column=1, pady=5)
 entry_password.last_modified = time.time()  # Inicializar el tiempo de modificación
 entry_password.bind("<KeyRelease>", lambda event: on_entry_change(event, entry_password))
 
+# Casilla de verificación para mostrar/ocultar la contraseña
+show_password_var = tk.BooleanVar()
+show_password_check = tk.Checkbutton(login_frame, text="Mostrar contraseña", variable=show_password_var, bg="#FFFFFF", command=toggle_password_visibility)
+show_password_check.grid(row=3, column=0, columnspan=2, pady=5)
+
 # Casilla de verificación "No soy un robot"
 var_no_robot = tk.BooleanVar()
 check_no_robot = tk.Checkbutton(login_frame, text="No soy un robot", variable=var_no_robot, bg="#FFFFFF")
-check_no_robot.grid(row=3, column=0, columnspan=2, pady=5)
+check_no_robot.grid(row=4, column=0, columnspan=2, pady=5)
 
 # Botón de inicio de sesión
 login_button = tk.Button(login_frame, text="Iniciar Sesión", font=("Arial", 10), bg="#4CAF50", fg="#FFFFFF", command=login)
-login_button.grid(row=4, column=0, columnspan=2, pady=10)
+login_button.grid(row=5, column=0, columnspan=2, pady=10)
 
 # Iniciar el loop principal
 root.mainloop()

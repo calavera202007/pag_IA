@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 from sklearn.metrics import r2_score
+import sklearn
+
 
 def mostrar_grafico_crecimiento_plantas(parent, main_content_widgets):
     archivo_csv = 'agua.csv'

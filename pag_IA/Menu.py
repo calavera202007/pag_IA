@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
-from PIL import ImageFont, ImageTk
+from PIL import ImageFont, ImageDraw, Image, ImageTk
 import graficos
 import ver_tabla
 import IA
@@ -15,7 +15,7 @@ class MainApp(tk.Tk):
         self.geometry("1500x800")
 
         font_path = "MaterialIcons-Regular.ttf"
-        self.material_icons = ImageFont.truetype(font_path, 16)
+        self.material_icons = ImageFont.truetype(font_path, 24)  # Tamaño de 24 para los iconos
 
         self.dark_mode = False
         self.current_page = "Inicio"
@@ -49,7 +49,8 @@ class MainApp(tk.Tk):
             'sidebar': '#333' if self.dark_mode else '#4CAF50',
             'text': '#fff' if self.dark_mode else '#000',
             'bg': '#222' if self.dark_mode else '#fff',
-            'fg': '#fff' if self.dark_mode else '#000'
+            'fg': '#fff' if self.dark_mode else '#000',
+            'icon': 'white' if self.dark_mode else 'black'
         }
 
     def configure_styles(self):
@@ -60,6 +61,13 @@ class MainApp(tk.Tk):
                        relief=[("pressed", "sunken")],
                        borderwidth=[("pressed", 2)])
 
+    def create_icon_image(self, icon_char):
+        """Crea una imagen de un icono usando un carácter de Material Icons."""
+        image = Image.new("RGBA", (40, 40), (0, 0, 0, 0))  # Reducción del tamaño del área
+        draw = ImageDraw.Draw(image)
+        draw.text((5, 5), icon_char, font=self.material_icons, fill=self.colors['icon'])  # Ajuste del offset
+        return ImageTk.PhotoImage(image)
+
     def create_sidebar_content(self):
         self.date_time = tk.Label(self.sidebar, text="", bg=self.colors['sidebar'], fg=self.colors['text'])
         self.date_time.pack(pady=(20, 10), anchor='center')
@@ -68,24 +76,24 @@ class MainApp(tk.Tk):
         self.logo = tk.Label(self.sidebar, image=self.logoImage, bg=self.colors['sidebar'])
         self.logo.pack(pady=(10, 10), anchor='center')
 
-        self.brandName = tk.Label(self.sidebar, text='Sen Gideons', bg=self.colors['sidebar'], font=("", 15, "bold"),
+        self.brandName = tk.Label(self.sidebar, text='Lestoma', bg=self.colors['sidebar'], font=("", 15, "bold"),
                                   fg=self.colors['text'])
         self.brandName.pack(pady=(0, 20), anchor='center')
 
         buttons = [
-            ("Dashboard", "dashboard-icon.png", "Inicio"),
-            ("Modelo matemático", "manage-icon.png", "Modelo matemático"),
-            ("IA", "settings-icon.png", "IA"),
-            ("Reportes", "exit-icon.png", "Reportes"),
-            ("Cuestionario", "quiz-icon.png", "Cuestionario")
+            ("Dashboard", "\ue871", "Inicio"),  # "dashboard"
+            ("Modelo matemático", "\ue8b8", "Modelo matemático"),  # "settings"
+            ("IA", "\ue8b6", "IA"),  # "memory"
+            ("Reportes", "\ue8b3", "Reportes"),  # "assessment"
+            ("Cuestionario", "\ue8f4", "Cuestionario")  # "quiz"
         ]
 
-        for text, icon, page in buttons:
-            image = ImageTk.PhotoImage(file=f'images/{icon}')
-            button = tk.Button(self.sidebar, image=image, bg=self.colors['sidebar'], bd=0,
+        for text, icon_char, page in buttons:
+            icon_image = self.create_icon_image(icon_char)
+            button = tk.Button(self.sidebar, image=icon_image, bg=self.colors['sidebar'], bd=0,
                                cursor='hand2', activebackground=self.colors['sidebar'],
                                command=lambda p=page: self.on_button_click(p))
-            button.image = image
+            button.image = icon_image
             button.pack(pady=5, anchor='center')
             label = tk.Label(self.sidebar, text=text, bg=self.colors['sidebar'], font=("", 13, "bold"),
                              fg=self.colors['text'])
@@ -168,6 +176,24 @@ class MainApp(tk.Tk):
                                    ("pressed", self.colors['sidebar'])],
                        foreground=[("active", self.colors['text']),
                                    ("pressed", self.colors['text'])])
+
+        # Actualizar los iconos de los botones para reflejar el modo oscuro
+        self.update_icons()
+
+    def update_icons(self):
+        buttons = [
+            ("Dashboard", "\ue871", "Inicio"),
+            ("Modelo matemático", "\ue8b8", "Modelo matemático"),
+            ("IA", "\ue8b6", "IA"),
+            ("Reportes", "\ue8b3", "Reportes"),
+            ("Cuestionario", "\ue8f4", "Cuestionario")
+        ]
+
+        for _, icon_char, page in buttons:
+            icon_image = self.create_icon_image(icon_char)
+            button = getattr(self, f"{page.lower().replace(' ', '_')}_button")
+            button.config(image=icon_image)
+            button.image = icon_image
 
     def toggle_dark_mode(self, event=None):
         self.dark_mode = not self.dark_mode
