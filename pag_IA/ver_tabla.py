@@ -19,8 +19,8 @@ def main(root):
     cur = conn.cursor()
 
     # Función para obtener los datos de la tabla TBLechuga
-    def get_data():
-        cur.execute("""
+    def get_data(semana=None, num_cosecha=None, ubicacion=None, tipo_lechuga=None, tipo_siembra=None):
+        query = """
             SELECT L."PKIdLechuga", S."Tip_siembra", L."Ubicacion", T."TipoLechuga", D."AF", D."H", D."Semana", 
             D."Num_cosecha", D."Observaciones", F."Nombre", F."Ruta", F."Descripcion"
             FROM "Hidroponia"."TBLechuga" L
@@ -29,17 +29,37 @@ def main(root):
             JOIN "Hidroponia"."TBDatos" D ON L."PKIdLechuga" = D."FKIdLechuga"
             LEFT JOIN "Hidroponia"."TBReporte" R ON D."PKIdDatos" = R."FKIdDatos"
             LEFT JOIN "Hidroponia"."TBFoto" F ON R."FKIdFoto" = F."PKIdFoto"
-        """)
+            WHERE (%s IS NULL OR D."Semana" = %s)
+              AND (%s IS NULL OR D."Num_cosecha" = %s)
+              AND (%s IS NULL OR L."Ubicacion" = %s)
+              AND (%s IS NULL OR T."TipoLechuga" = %s)
+              AND (%s IS NULL OR S."Tip_siembra" = %s)
+        """
+
+        # Reemplaza las cadenas vacías con None
+        params = (
+            None if semana == '' else semana,
+            None if semana == '' else semana,
+            None if num_cosecha == '' else num_cosecha,
+            None if num_cosecha == '' else num_cosecha,
+            None if ubicacion == '' else ubicacion,
+            None if ubicacion == '' else ubicacion,
+            None if tipo_lechuga == '' else tipo_lechuga,
+            None if tipo_lechuga == '' else tipo_lechuga,
+            None if tipo_siembra == '' else tipo_siembra,
+            None if tipo_siembra == '' else tipo_siembra
+        )
+
+        cur.execute(query, params)
         data = cur.fetchall()
         return data
 
     # Función para mostrar los datos en la tabla
-    def show_data():
-        data = get_data()
+    def show_data(semana=None, num_cosecha=None, ubicacion=None, tipo_lechuga=None, tipo_siembra=None):
+        data = get_data(semana, num_cosecha, ubicacion, tipo_lechuga, tipo_siembra)
         for row in tabla.get_children():
             tabla.delete(row)
         for record in data:
-            # Reemplazar None o valores vacíos con guiones
             record = tuple('-' if v is None or v == '' else v for v in record)
             tabla.insert("", "end", values=record)
 
@@ -48,7 +68,6 @@ def main(root):
         try:
             item_selected = tabla.selection()[0]
             data = tabla.item(item_selected, "values")
-            # Reemplazar vacíos con guiones en los detalles
             data = tuple('-' if v == '' else v for v in data)
             messagebox.showinfo("Detalles del Registro",
                                 f"ID: {data[0]}\nTipo de Siembra: {data[1]}\nUbicación: {data[2]}"
@@ -79,7 +98,6 @@ def main(root):
             lechuga_id = tabla.item(item_selected, "values")[0]
             data = tabla.item(item_selected, "values")
 
-            # Solicitar nueva información
             new_af = simpledialog.askstring("Actualizar Registro", "Nueva Área Foliar (cm2):", parent=root,
                                             initialvalue=data[4])
             new_h = simpledialog.askstring("Actualizar Registro", "Nueva Altura (cm):", parent=root, initialvalue=data[5])
@@ -104,7 +122,14 @@ def main(root):
 
     # Función para generar el reporte en PDF
     def generar_reporte():
-        data = get_data()
+        semana = filtro_semana.get()
+        num_cosecha = filtro_num_cosecha.get()
+        ubicacion = filtro_ubicacion.get()
+        tipo_lechuga = filtro_tipo_lechuga.get()
+        tipo_siembra = filtro_tipo_siembra.get()
+
+        data = get_data(semana, num_cosecha, ubicacion, tipo_lechuga, tipo_siembra)
+
         doc = SimpleDocTemplate("Reporte_Lestoma.pdf", pagesize=letter)
         elements = []
 
@@ -116,7 +141,6 @@ def main(root):
         table_data = [["ID", "Tipo de Siembra", "Ubicación", "Tipo de Lechuga", "Área Foliar", "Altura", "Semana",
                        "Número de Siembra", "Observaciones", "Nombre Foto", "Ruta Foto", "Descripción Foto"]]
         for record in data:
-            # Reemplazar None o valores vacíos con guiones en el reporte
             record = tuple('-' if v is None or v == '' else v for v in record)
             table_data.append(record)
 
@@ -177,6 +201,31 @@ def main(root):
     tabla.pack(pady=18, padx=18, fill=tk.BOTH, expand=True)
     tabla.bind("<Double-1>", ver_detalles)
 
+    # Crear el frame de filtros
+    frame_filtros = ttk.Frame(root)
+    frame_filtros.pack(pady=10, padx=10, fill=tk.X)
+
+    # Filtros
+    ttk.Label(frame_filtros, text="Semana:").grid(row=0, column=0, padx=5, pady=5)
+    filtro_semana = tk.StringVar()
+    ttk.Entry(frame_filtros, textvariable=filtro_semana).grid(row=0, column=1, padx=5, pady=5)
+
+    ttk.Label(frame_filtros, text="Número de Cosecha:").grid(row=1, column=0, padx=5, pady=5)
+    filtro_num_cosecha = tk.StringVar()
+    ttk.Entry(frame_filtros, textvariable=filtro_num_cosecha).grid(row=1, column=1, padx=5, pady=5)
+
+    ttk.Label(frame_filtros, text="Ubicación:").grid(row=2, column=0, padx=5, pady=5)
+    filtro_ubicacion = tk.StringVar()
+    ttk.Entry(frame_filtros, textvariable=filtro_ubicacion).grid(row=2, column=1, padx=5, pady=5)
+
+    ttk.Label(frame_filtros, text="Tipo de Lechuga:").grid(row=3, column=0, padx=5, pady=5)
+    filtro_tipo_lechuga = tk.StringVar()
+    ttk.Entry(frame_filtros, textvariable=filtro_tipo_lechuga).grid(row=3, column=1, padx=5, pady=5)
+
+    ttk.Label(frame_filtros, text="Tipo de Siembra:").grid(row=4, column=0, padx=5, pady=5)
+    filtro_tipo_siembra = tk.StringVar()
+    ttk.Entry(frame_filtros, textvariable=filtro_tipo_siembra).grid(row=4, column=1, padx=5, pady=5)
+
     # Botones con estilos ttk
     boton_detalles = ttk.Button(root, text="Ver Detalles", command=ver_detalles)
     boton_detalles.pack(pady=5)
@@ -199,3 +248,5 @@ def main(root):
     # Cerrar la conexión con PostgreSQL
     cur.close()
     conn.close()
+
+
