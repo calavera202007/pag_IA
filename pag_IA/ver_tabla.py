@@ -85,8 +85,23 @@ def main(root):
             lechuga_id = tabla.item(item_selected, "values")[0]
             confirm = messagebox.askyesno("Confirmar", "¿Estás seguro de eliminar este registro?")
             if confirm:
+                # Obtener el ID de "TBDatos" relacionado
+                cur.execute('SELECT "PKIdDatos" FROM "Hidroponia"."TBDatos" WHERE "FKIdLechuga" = %s', (lechuga_id,))
+                datos_ids = cur.fetchall()
+
+                # Eliminar registros en "TBReporte"
+                for datos_id in datos_ids:
+                    cur.execute('DELETE FROM "Hidroponia"."TBReporte" WHERE "FKIdDatos" = %s', (datos_id,))
+                    conn.commit()
+
+                # Eliminar registros en "TBDatos"
+                cur.execute('DELETE FROM "Hidroponia"."TBDatos" WHERE "FKIdLechuga" = %s', (lechuga_id,))
+                conn.commit()
+
+                # Finalmente, eliminar el registro en "TBLechuga"
                 cur.execute('DELETE FROM "Hidroponia"."TBLechuga" WHERE "PKIdLechuga" = %s', (lechuga_id,))
                 conn.commit()
+
                 show_data()
         except IndexError:
             messagebox.showwarning("Advertencia", "Por favor selecciona un registro primero.")
