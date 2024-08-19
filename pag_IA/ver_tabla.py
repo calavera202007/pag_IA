@@ -3,10 +3,11 @@ from tkinter import ttk, simpledialog, messagebox
 import psycopg2
 import datetime
 from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
 from reportlab.lib import colors
+from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet
-
+import os
 def main(root):
     # Establecer la conexión con PostgreSQL
     conn = psycopg2.connect(
@@ -148,25 +149,48 @@ def main(root):
         doc = SimpleDocTemplate("Reporte_Lestoma.pdf", pagesize=letter)
         elements = []
 
-        # Agregar encabezado
+        # Agregar encabezado con imágenes
         styles = getSampleStyleSheet()
         header = Paragraph("Reporte Lestoma - " + datetime.datetime.now().strftime("%Y-%m-%d"), styles["Heading1"])
-        elements.append(header)
 
+        logo_izq = Image(os.path.join("images", "logo.png"), width=60, height=60)
+        logo_der = Image(os.path.join("images", "lestoma.png"), width=60, height=60)
+
+        header_table = Table([[logo_izq, header, logo_der]], colWidths=[60, 400, 60])
+        header_table.setStyle(TableStyle([('ALIGN', (1, 0), (1, 0), 'CENTER')]))
+
+        elements.append(header_table)
+
+        # Crear los datos de la tabla
         table_data = [["ID", "Tipo de Siembra", "Ubicación", "Tipo de Lechuga", "Área Foliar", "Altura", "Semana",
-                       "Número de Siembra", "Observaciones", "Nombre Foto", "Ruta Foto", "Descripción Foto"]]
+                       "Número de Siembra", "Observaciones"]]
+
         for record in data:
             record = tuple('-' if v is None or v == '' else v for v in record)
-            table_data.append(record)
+            row = [record[0][:3] + '..'] + list(record[1:8]) + [record[8]]
+            table_data.append(row)
 
-        table = Table(table_data)
-        style = TableStyle([('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                            ('GRID', (0, 0), (-1, -1), 1, colors.black)])
+        # Crear y ajustar la tabla
+        table = Table(table_data, colWidths=[30, 70, 60, 70, 45, 45, 35, 70, 80])
+        style = TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 6),  # Reducir el tamaño de la fuente del encabezado
+            ('FONTSIZE', (0, 1), (-1, -1), 7),  # Reducir el tamaño de la fuente de los datos
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('WORDWRAP', (0, 0), (-1, -1), 'CJK')  # Habilitar ajuste de texto
+        ])
         table.setStyle(style)
+
+        # Ajustar la longitud de las celdas para que el texto se ajuste dentro
+        for row_num, row in enumerate(table_data):
+            for col_num, cell in enumerate(row):
+                table._argW[col_num] = max(table._argW[col_num], len(str(cell)) * 4)  # Ajustar según el contenido
+
         elements.append(table)
         doc.build(elements)
         messagebox.showinfo("Reporte generado", "El reporte en PDF se ha generado exitosamente.")
