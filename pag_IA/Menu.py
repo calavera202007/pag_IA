@@ -15,12 +15,12 @@ class MainApp(tk.Tk):
         self.geometry("1500x800")
 
         font_path = "MaterialIcons-Regular.ttf"
-        self.material_icons = ImageFont.truetype(font_path, 24)  # Tamaño de 24 para los iconos
+        self.material_icons = ImageFont.truetype(font_path, 18)  # Tamaño reducido para los iconos
 
         self.dark_mode = False
         self.current_page = "Inicio"
 
-        self.sidebar = tk.Frame(self, width=250, height=800)
+        self.sidebar = tk.Frame(self, width=200, height=800)  # Ancho reducido
         self.sidebar.pack(side=tk.LEFT, fill=tk.Y)
 
         self.main_content = tk.Frame(self)
@@ -35,9 +35,9 @@ class MainApp(tk.Tk):
 
         self.create_sidebar_content()
 
-        self.toggle_dark_mode_btn = tk.Canvas(self.sidebar, width=50, height=25, bd=0, highlightthickness=0)
-        self.toggle_dark_mode_btn.pack(side=tk.BOTTOM, pady=20)
-        self.toggle_button_circle = self.toggle_dark_mode_btn.create_oval(2, 2, 23, 23, fill="white", outline="")
+        self.toggle_dark_mode_btn = tk.Canvas(self.sidebar, width=40, height=20, bd=0, highlightthickness=0)
+        self.toggle_dark_mode_btn.pack(side=tk.BOTTOM, pady=15)  # Reducción de tamaño y padding
+        self.toggle_button_circle = self.toggle_dark_mode_btn.create_oval(2, 2, 18, 18, fill="white", outline="")
         self.toggle_dark_mode_btn.bind("<Button-1>", self.toggle_dark_mode)
 
         self.apply_dark_mode()
@@ -55,37 +55,37 @@ class MainApp(tk.Tk):
 
     def configure_styles(self):
         self.style.configure("Sidebar.TButton",
-                             font=("Arial", 12),
-                             padding=10)
+                             font=("Arial", 6),
+                             padding=8)
         self.style.map("Sidebar.TButton",
                        relief=[("pressed", "sunken")],
                        borderwidth=[("pressed", 2)])
 
     def create_icon_image(self, icon_char):
-        """Crea una imagen de un icono usando un carácter de Material Icons."""
-        image = Image.new("RGBA", (40, 40), (0, 0, 0, 0))  # Reducción del tamaño del área
+        image = Image.new("RGBA", (25, 25), (0, 0, 0, 0))  # Reducción del tamaño del área
         draw = ImageDraw.Draw(image)
         draw.text((5, 5), icon_char, font=self.material_icons, fill=self.colors['icon'])  # Ajuste del offset
         return ImageTk.PhotoImage(image)
 
     def create_sidebar_content(self):
         self.date_time = tk.Label(self.sidebar, text="", bg=self.colors['sidebar'], fg=self.colors['text'])
-        self.date_time.pack(pady=(20, 10), anchor='center')
+        self.date_time.pack(pady=(15, 8), anchor='center')
 
         self.logoImage = ImageTk.PhotoImage(file='images/hyy.png')
         self.logo = tk.Label(self.sidebar, image=self.logoImage, bg=self.colors['sidebar'])
-        self.logo.pack(pady=(10, 10), anchor='center')
+        self.logo.pack(pady=(8, 8), anchor='center')
 
         self.brandName = tk.Label(self.sidebar, text='Lestoma', bg=self.colors['sidebar'], font=("", 15, "bold"),
                                   fg=self.colors['text'])
-        self.brandName.pack(pady=(0, 20), anchor='center')
+        self.brandName.pack(pady=(0, 15), anchor='center')
 
         buttons = [
             ("Dashboard", "\ue871", "Inicio"),  # "dashboard"
             ("Modelo matemático", "\ue8b8", "Modelo matemático"),  # "settings"
             ("IA", "\ue8b6", "IA"),  # "memory"
             ("Reportes", "\ue8b3", "Reportes"),  # "assessment"
-            ("Cuestionario", "\ue8f4", "Cuestionario")  # "quiz"
+            ("Cuestionario", "\ue8f4", "Cuestionario"),  # "quiz"
+            ("Salir", "\ue879", "Salir")  # "exit_to_app"
         ]
 
         for text, icon_char, page in buttons:
@@ -94,10 +94,10 @@ class MainApp(tk.Tk):
                                cursor='hand2', activebackground=self.colors['sidebar'],
                                command=lambda p=page: self.on_button_click(p))
             button.image = icon_image
-            button.pack(pady=5, anchor='center')
+            button.pack(pady=3, anchor='center')
             label = tk.Label(self.sidebar, text=text, bg=self.colors['sidebar'], font=("", 13, "bold"),
                              fg=self.colors['text'])
-            label.pack(pady=(0, 20), anchor='center')
+            label.pack(pady=(0, 15), anchor='center')
             setattr(self, f"{page.lower().replace(' ', '_')}_button", button)
             setattr(self, f"{page.lower().replace(' ', '_')}_label", label)
 
@@ -137,6 +137,8 @@ class MainApp(tk.Tk):
             ver_tabla.main(frame)
         elif self.current_page == "Cuestionario":
             Cuestionario.main(frame)
+        elif self.current_page == "Salir":
+            self.quit_app()
 
     def mostrar_graficos_modelo_matematico(self, parent):
         try:
@@ -186,7 +188,8 @@ class MainApp(tk.Tk):
             ("Modelo matemático", "\ue8b8", "Modelo matemático"),
             ("IA", "\ue8b6", "IA"),
             ("Reportes", "\ue8b3", "Reportes"),
-            ("Cuestionario", "\ue8f4", "Cuestionario")
+            ("Cuestionario", "\ue8f4", "Cuestionario"),
+            ("Salir", "\ue879", "Salir")
         ]
 
         for _, icon_char, page in buttons:
@@ -206,6 +209,9 @@ class MainApp(tk.Tk):
         else:
             self.toggle_dark_mode_btn.coords(self.toggle_button_circle, 2, 2, 23, 23)
             self.toggle_dark_mode_btn.config(bg="#ccc")
+
+    def quit_app(self):
+        self.quit()
 
     def show_time(self):
         current_time = time.strftime("%H:%M")
