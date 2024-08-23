@@ -94,14 +94,17 @@ def main(root):
                 for datos_id in datos_ids:
                     cur.execute('DELETE FROM "Hidroponia"."TBReporte" WHERE "FKIdDatos" = %s', (datos_id,))
                     conn.commit()
+                    print(f"Registros eliminados en TBReporte para FKIdDatos={datos_id}")  # Depuración
 
                 # Eliminar registros en "TBDatos"
                 cur.execute('DELETE FROM "Hidroponia"."TBDatos" WHERE "FKIdLechuga" = %s', (lechuga_id,))
                 conn.commit()
+                print(f"Registros eliminados en TBDatos para FKIdLechuga={lechuga_id}")  # Depuración
 
                 # Finalmente, eliminar el registro en "TBLechuga"
                 cur.execute('DELETE FROM "Hidroponia"."TBLechuga" WHERE "PKIdLechuga" = %s', (lechuga_id,))
                 conn.commit()
+                print(f"Registro eliminado en TBLechuga para PKIdLechuga={lechuga_id}")  # Depuración
 
                 show_data()
         except IndexError:
