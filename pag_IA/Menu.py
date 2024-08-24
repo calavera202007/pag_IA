@@ -11,7 +11,7 @@ import IA
 import inicio
 import Cuestionario
 import os
-
+###
 # Definición de la clase MainApp antes de su uso
 class MainApp(tk.Tk):
     def __init__(self, user_name):
