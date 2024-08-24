@@ -1,13 +1,18 @@
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox
+from tkinter import filedialog
 import uuid
+import os
+import shutil
 import psycopg2
+
 
 def validate_numeric_input(new_value):
     if new_value == "" or new_value.replace(".", "", 1).isdigit():
         return True
     return False
+
 
 def highlight_empty_fields(fields):
     for field in fields:
@@ -16,6 +21,7 @@ def highlight_empty_fields(fields):
                 field['entry'].config(background='red')
             else:
                 field['entry'].config(background='white')
+
 
 def save_data():
     siembra = siembra_var.get()
@@ -129,6 +135,7 @@ def save_data():
             cursor.close()
             conn.close()
 
+
 def clear_fields():
     siembra_var.set("Agua")
     ubicacion_var.set("L1")
@@ -147,6 +154,27 @@ def clear_fields():
     semana_entry.config(background='white')
     num_cosecha_entry.config(background='white')
 
+
+def select_image():
+    filetypes = [("Image files", "*.jpg;*.jpeg;*.png;*.bmp;*.gif")]
+    filepath = filedialog.askopenfilename(title="Seleccionar Imagen", filetypes=filetypes)
+
+    if filepath:
+        image_folder = "imagenes"
+        os.makedirs(image_folder, exist_ok=True)
+
+        # Generar un nombre único para la imagen
+        image_name = os.path.basename(filepath)
+        new_filepath = os.path.join(image_folder, image_name)
+
+        # Copiar la imagen seleccionada a la carpeta "imagenes"
+        shutil.copy(filepath, new_filepath)
+
+        # Actualizar la entrada de ruta_foto con la nueva ruta
+        ruta_foto_entry.delete(0, tk.END)
+        ruta_foto_entry.insert(0, new_filepath)
+
+
 def main(frame):
     global siembra_var, ubicacion_var, lechuga_var, af_entry, h_entry, semana_entry, num_cosecha_entry
     global observaciones_entry, nombre_foto_entry, ruta_foto_entry, descripcion_foto_entry
@@ -161,56 +189,67 @@ def main(frame):
 
     ttk.Label(container, text="Tipo de Siembra:", font=font_large).grid(row=1, column=1, sticky=tk.W)
     siembra_var = tk.StringVar(value="Agua")
-    tk.Radiobutton(container, text="Agua", variable=siembra_var, value="Agua", font=font_large).grid(row=1, column=2, sticky=tk.W)
-    tk.Radiobutton(container, text="Tierra", variable=siembra_var, value="Tierra", font=font_large).grid(row=1, column=3, sticky=tk.W)
+    tk.Radiobutton(container, text="Agua", variable=siembra_var, value="Agua", font=font_large).grid(row=1, column=2,
+                                                                                                     sticky=tk.W)
+    tk.Radiobutton(container, text="Tierra", variable=siembra_var, value="Tierra", font=font_large).grid(row=1,
+                                                                                                         column=3,
+                                                                                                         sticky=tk.W)
 
     ttk.Label(container, text="Ubicación:", font=font_large).grid(row=2, column=1, sticky=tk.W)
     ubicacion_var = tk.StringVar(value="L1")
-    tk.Radiobutton(container, text="L1", variable=ubicacion_var, value="L1", font=font_large).grid(row=2, column=2, sticky=tk.W)
-    tk.Radiobutton(container, text="L2", variable=ubicacion_var, value="L2", font=font_large).grid(row=2, column=3, sticky=tk.W)
-    tk.Radiobutton(container, text="L3", variable=ubicacion_var, value="L3", font=font_large).grid(row=2, column=4, sticky=tk.W)
-    tk.Radiobutton(container, text="L4", variable=ubicacion_var, value="L4", font=font_large).grid(row=2, column=5, sticky=tk.W)
+    tk.Radiobutton(container, text="L1", variable=ubicacion_var, value="L1", font=font_large).grid(row=2, column=2,
+                                                                                                   sticky=tk.W)
+    tk.Radiobutton(container, text="L2", variable=ubicacion_var, value="L2", font=font_large).grid(row=2, column=3,
+                                                                                                   sticky=tk.W)
+    tk.Radiobutton(container, text="L3", variable=ubicacion_var, value="L3", font=font_large).grid(row=2, column=4,
+                                                                                                   sticky=tk.W)
+    tk.Radiobutton(container, text="L4", variable=ubicacion_var, value="L4", font=font_large).grid(row=2, column=5,
+                                                                                                   sticky=tk.W)
 
     ttk.Label(container, text="Tipo de Lechuga:", font=font_large).grid(row=3, column=1, sticky=tk.W)
     lechuga_var = tk.StringVar(value="V1")
-    tk.Radiobutton(container, text="V1", variable=lechuga_var, value="V1", font=font_large).grid(row=3, column=2, sticky=tk.W)
-    tk.Radiobutton(container, text="V2", variable=lechuga_var, value="V2", font=font_large).grid(row=3, column=3, sticky=tk.W)
+    tk.Radiobutton(container, text="V1", variable=lechuga_var, value="V1", font=font_large).grid(row=3, column=2,
+                                                                                                 sticky=tk.W)
+    tk.Radiobutton(container, text="V2", variable=lechuga_var, value="V2", font=font_large).grid(row=3, column=3,
+                                                                                                 sticky=tk.W)
+    tk.Radiobutton(container, text="V3", variable=lechuga_var, value="V3", font=font_large).grid(row=3, column=4,
+                                                                                                 sticky=tk.W)
+    tk.Radiobutton(container, text="V4", variable=lechuga_var, value="V4", font=font_large).grid(row=3, column=5,
+                                                                                                 sticky=tk.W)
 
-    ttk.Label(container, text="Área Foliar (cm2):", font=font_large).grid(row=4, column=1, sticky=tk.W)
-    af_entry = ttk.Entry(container, font=font_large, validate="key", validatecommand=(container.register(validate_numeric_input), '%P'))
-    af_entry.grid(row=4, column=2, columnspan=4, sticky=(tk.W, tk.E))
+    ttk.Label(container, text="AF:", font=font_large).grid(row=4, column=1, sticky=tk.W)
+    af_entry = ttk.Entry(container, font=font_large)
+    af_entry.grid(row=4, column=2, sticky=(tk.W, tk.E))
 
-    ttk.Label(container, text="Altura (cm):", font=font_large).grid(row=5, column=1, sticky=tk.W)
-    h_entry = ttk.Entry(container, font=font_large, validate="key", validatecommand=(container.register(validate_numeric_input), '%P'))
-    h_entry.grid(row=5, column=2, columnspan=4, sticky=(tk.W, tk.E))
+    ttk.Label(container, text="H:", font=font_large).grid(row=5, column=1, sticky=tk.W)
+    h_entry = ttk.Entry(container, font=font_large)
+    h_entry.grid(row=5, column=2, sticky=(tk.W, tk.E))
 
     ttk.Label(container, text="Semana:", font=font_large).grid(row=6, column=1, sticky=tk.W)
-    semana_entry = ttk.Entry(container, font=font_large, validate="key", validatecommand=(container.register(validate_numeric_input), '%P'))
-    semana_entry.grid(row=6, column=2, columnspan=4, sticky=(tk.W, tk.E))
+    semana_entry = ttk.Entry(container, font=font_large)
+    semana_entry.grid(row=6, column=2, sticky=(tk.W, tk.E))
 
-    ttk.Label(container, text="Número de Siembra:", font=font_large).grid(row=7, column=1, sticky=tk.W)
-    num_cosecha_entry = ttk.Entry(container, font=font_large, validate="key", validatecommand=(container.register(validate_numeric_input), '%P'))
-    num_cosecha_entry.grid(row=7, column=2, columnspan=4, sticky=(tk.W, tk.E))
+    ttk.Label(container, text="Número de Cosecha:", font=font_large).grid(row=7, column=1, sticky=tk.W)
+    num_cosecha_entry = ttk.Entry(container, font=font_large)
+    num_cosecha_entry.grid(row=7, column=2, sticky=(tk.W, tk.E))
 
     ttk.Label(container, text="Observaciones:", font=font_large).grid(row=8, column=1, sticky=tk.W)
     observaciones_entry = ttk.Entry(container, font=font_large)
-    observaciones_entry.grid(row=8, column=2, columnspan=4, sticky=(tk.W, tk.E))
+    observaciones_entry.grid(row=8, column=2, sticky=(tk.W, tk.E))
 
-    ttk.Label(container, text="Nombre Foto (Opcional):", font=font_large).grid(row=9, column=1, sticky=tk.W)
+    ttk.Label(container, text="Nombre Foto:", font=font_large).grid(row=9, column=1, sticky=tk.W)
     nombre_foto_entry = ttk.Entry(container, font=font_large)
-    nombre_foto_entry.grid(row=9, column=2, columnspan=4, sticky=(tk.W, tk.E))
+    nombre_foto_entry.grid(row=9, column=2, sticky=(tk.W, tk.E))
 
-    ttk.Label(container, text="Ruta Foto (Opcional):", font=font_large).grid(row=10, column=1, sticky=tk.W)
+    ttk.Label(container, text="Ruta Foto:", font=font_large).grid(row=10, column=1, sticky=tk.W)
     ruta_foto_entry = ttk.Entry(container, font=font_large)
-    ruta_foto_entry.grid(row=10, column=2, columnspan=4, sticky=(tk.W, tk.E))
+    ruta_foto_entry.grid(row=10, column=2, sticky=(tk.W, tk.E))
 
-    ttk.Label(container, text="Descripción Foto (Opcional):", font=font_large).grid(row=11, column=1, sticky=tk.W)
+    ttk.Label(container, text="Descripción Foto:", font=font_large).grid(row=11, column=1, sticky=tk.W)
     descripcion_foto_entry = ttk.Entry(container, font=font_large)
-    descripcion_foto_entry.grid(row=11, column=2, columnspan=4, sticky=(tk.W, tk.E))
+    descripcion_foto_entry.grid(row=11, column=2, sticky=(tk.W, tk.E))
 
-    tk.Button(container, text="Guardar", command=save_data, font=font_large).grid(row=12, column=2, columnspan=4, sticky=tk.E)
+    # Botón para seleccionar imagen
+    ttk.Button(container, text="Seleccionar Imagen", command=select_image).grid(row=10, column=3, sticky=tk.W)
 
-    for i in range(1, 6):
-        container.columnconfigure(i, weight=1)
-
-
+    ttk.Button(container, text="Guardar", command=save_data).grid(row=12, column=2, sticky=tk.E)

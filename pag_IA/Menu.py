@@ -14,10 +14,11 @@ import os
 
 # Definición de la clase MainApp antes de su uso
 class MainApp(tk.Tk):
-    def __init__(self):
+    def __init__(self, user_name):
         super().__init__()
         self.title("Menú Lateral")
         self.geometry("1500x800")
+        self.user_name = user_name  # Guardar el nombre del usuario
 
         font_path = "MaterialIcons-Regular.ttf"
         self.material_icons = ImageFont.truetype(font_path, 18)
@@ -80,7 +81,8 @@ class MainApp(tk.Tk):
         self.logo = tk.Label(self.sidebar, image=self.logoImage, bg=self.colors['sidebar'])
         self.logo.pack(pady=(8, 8), anchor='center')
 
-        self.brandName = tk.Label(self.sidebar, text='Lestoma', bg=self.colors['sidebar'], font=("", 15, "bold"),
+        # Mostrar el nombre del usuario en lugar de "Lestoma"
+        self.brandName = tk.Label(self.sidebar, text=self.user_name, bg=self.colors['sidebar'], font=("", 15, "bold"),
                                   fg=self.colors['text'])
         self.brandName.pack(pady=(0, 15), anchor='center')
 
@@ -254,19 +256,23 @@ def verify_credentials(username, password):
         encoded_password = hashlib.sha512(password.encode()).hexdigest()
 
         cursor.execute("""
-            SELECT 1 
+            SELECT "UsrNombre" 
             FROM "Super Administrador"."Usuario" 
-            WHERE "Usuario"."UsrCorreo" = %s AND "Usuario"."UsrContrasenna" = %s
+            WHERE "UsrCorreo" = %s AND "UsrContrasenna" = %s
         """, (username, encoded_password))
 
         result = cursor.fetchone()
         conn.close()
 
-        return result is not None
+        if result:
+            return result[0]  # Retornar el nombre del usuario
+        else:
+            return None
 
     except (Exception, psycopg2.Error) as error:
         messagebox.showerror("Error", f"Error al conectarse a la base de datos: {error}")
-        return False
+        return None
+
 
 # Función para validar las credenciales y el captcha
 def login():
@@ -285,13 +291,16 @@ def login():
         messagebox.showerror("Error", "Por favor, ingrese un nombre de usuario y una contraseña.")
     elif not is_valid_email(username):
         messagebox.showerror("Error", "Por favor, ingrese una dirección de correo válida.")
-    elif not verify_credentials(username, password):
-        messagebox.showerror("Error", "Nombre de usuario o contraseña incorrectos.")
     else:
-        messagebox.showinfo("Éxito", "Inicio de sesión exitoso.")
-        root.destroy()  # Cerrar la ventana de inicio de sesión
-        app = MainApp()  # Ejecutar la interfaz principal
-        app.mainloop()
+        user_name = verify_credentials(username, password)
+        if user_name is None:
+            messagebox.showerror("Error", "Nombre de usuario o contraseña incorrectos.")
+        else:
+            messagebox.showinfo("Éxito", "Inicio de sesión exitoso.")
+            root.destroy()  # Cerrar la ventana de inicio de sesión
+            app = MainApp(user_name)  # Pasar el nombre de usuario a MainApp
+            app.mainloop()
+
 
 
 # Función para actualizar el tiempo de modificación

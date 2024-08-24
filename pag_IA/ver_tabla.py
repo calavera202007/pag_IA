@@ -8,6 +8,9 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet
 import os
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+
 def main(root):
     # Establecer la conexión con PostgreSQL
     conn = psycopg2.connect(
@@ -37,7 +40,6 @@ def main(root):
               AND (%s IS NULL OR S."Tip_siembra" = %s)
         """
 
-        # Reemplaza las cadenas vacías con None
         params = (
             None if semana == '' else semana,
             None if semana == '' else semana,
@@ -198,97 +200,101 @@ def main(root):
         doc.build(elements)
         messagebox.showinfo("Reporte generado", "El reporte en PDF se ha generado exitosamente.")
 
-    # Crear la tabla con estilos personalizados
-    style = ttk.Style()
-    style.configure("Treeview",
-                    background="lightblue",
-                    foreground="black",
-                    rowheight=25,
-                    fieldbackground="lightblue")
-    style.map("Treeview", background=[('selected', 'blue')])
 
-    tabla = ttk.Treeview(root, style="Treeview")
-    tabla["columns"] = (
-        "id", "siembra", "ubicacion", "lechuga", "af", "h", "semana", "num_cosecha", "observaciones", "nombre_foto",
-        "ruta_foto", "descripcion_foto"
-    )
+    # Nueva función para generar un reporte en Excel
+    def generar_reporte_excel():
+        # Obtener los valores de los filtros
+        semana = filtro_semana.get()
+        num_cosecha = filtro_num_cosecha.get()
+        ubicacion = filtro_ubicacion.get()
+        tipo_lechuga = filtro_tipo_lechuga.get()
+        tipo_siembra = filtro_tipo_siembra.get()
 
-    tabla.column("#0", width=0, stretch=tk.NO)
-    tabla.column("id", width=40, anchor="center")
-    tabla.column("siembra", width=120, anchor="w")
-    tabla.column("ubicacion", width=80, anchor="w")
-    tabla.column("lechuga", width=120, anchor="w")
-    tabla.column("af", width=80, anchor="center")
-    tabla.column("h", width=80, anchor="center")
-    tabla.column("semana", width=80, anchor="center")
-    tabla.column("num_cosecha", width=120, anchor="center")
-    tabla.column("observaciones", width=150, anchor="w")
-    tabla.column("nombre_foto", width=120, anchor="w")
-    tabla.column("ruta_foto", width=150, anchor="w")
-    tabla.column("descripcion_foto", width=100, anchor="w")
+        # Obtener los datos filtrados
+        data = get_data(semana, num_cosecha, ubicacion, tipo_lechuga, tipo_siembra)
 
-    tabla.heading("id", text="ID", anchor="center")
-    tabla.heading("siembra", text="Tipo de Siembra", anchor="w")
-    tabla.heading("ubicacion", text="Ubicación", anchor="w")
-    tabla.heading("lechuga", text="Tipo de Lechuga", anchor="w")
-    tabla.heading("af", text="Área Foliar (cm2)", anchor="center")
-    tabla.heading("h", text="Altura (cm)", anchor="center")
-    tabla.heading("semana", text="Semana", anchor="center")
-    tabla.heading("num_cosecha", text="Número de Siembra", anchor="center")
-    tabla.heading("observaciones", text="Observaciones", anchor="w")
-    tabla.heading("nombre_foto", text="Nombre Foto", anchor="w")
-    tabla.heading("ruta_foto", text="Ruta Foto", anchor="w")
-    tabla.heading("descripcion_foto", text="Descripción Foto", anchor="w")
+        # Crear un nuevo libro de Excel
+        workbook = Workbook()
+        sheet = workbook.active
+        sheet.title = "Reporte Lestoma"
 
-    tabla.pack(pady=18, padx=18, fill=tk.BOTH, expand=True)
+        # Definir los encabezados sin las columnas de fotos
+        headers = ["ID", "Tipo de Siembra", "Ubicación", "Tipo de Lechuga", "AF", "H", "Semana", "Nº Siembra",
+                   "Observaciones"]
+        sheet.append(headers)
+
+        # Añadir los datos a la hoja, excluyendo las columnas de fotos
+        for record in data:
+            # Excluir las últimas tres columnas (asumiendo que estas son las columnas de fotos)
+            filtered_record = record[:-3]  # Esto elimina los últimos 3 elementos de cada tupla
+            sheet.append(list(filtered_record))
+
+        # Formatear los encabezados
+        for cell in sheet["1:1"]:
+            cell.font = Font(bold=True)
+            cell.alignment = Alignment(horizontal="center")
+
+        # Guardar el archivo Excel
+        file_path = "Reporte_Lestoma.xlsx"
+        workbook.save(file_path)
+
+        # Mostrar un mensaje de éxito
+        messagebox.showinfo("Reporte Generado", f"El reporte en Excel ha sido generado y guardado como {file_path}")
+
+    # Interfaz Gráfica
+    frame = tk.Frame(root)
+    frame.pack(padx=10, pady=10)
+
+    tk.Label(frame, text="Semana:").grid(row=0, column=0, padx=5, pady=5)
+    filtro_semana = ttk.Entry(frame)
+    filtro_semana.grid(row=0, column=1, padx=5, pady=5)
+
+    tk.Label(frame, text="Nº Cosecha:").grid(row=0, column=2, padx=5, pady=5)
+    filtro_num_cosecha = ttk.Entry(frame)
+    filtro_num_cosecha.grid(row=0, column=3, padx=5, pady=5)
+
+    tk.Label(frame, text="Ubicación:").grid(row=1, column=0, padx=5, pady=5)
+    filtro_ubicacion = ttk.Entry(frame)
+    filtro_ubicacion.grid(row=1, column=1, padx=5, pady=5)
+
+    tk.Label(frame, text="Tipo de Lechuga:").grid(row=1, column=2, padx=5, pady=5)
+    filtro_tipo_lechuga = ttk.Entry(frame)
+    filtro_tipo_lechuga.grid(row=1, column=3, padx=5, pady=5)
+
+    tk.Label(frame, text="Tipo de Siembra:").grid(row=2, column=0, padx=5, pady=5)
+    filtro_tipo_siembra = ttk.Entry(frame)
+    filtro_tipo_siembra.grid(row=2, column=1, padx=5, pady=5)
+
+    boton_buscar = ttk.Button(frame, text="Buscar", command=lambda: show_data(filtro_semana.get(),
+                                                                              filtro_num_cosecha.get(),
+                                                                              filtro_ubicacion.get(),
+                                                                              filtro_tipo_lechuga.get(),
+                                                                              filtro_tipo_siembra.get()))
+    boton_buscar.grid(row=2, column=2, columnspan=2, padx=5, pady=5)
+
+    columns = ("ID", "Tipo de Siembra", "Ubicación", "Tipo de Lechuga", "AF", "H", "Semana", "Nº Siembra", "Observaciones", "Foto Nombre", "Foto Ruta", "Foto Descripción")
+    tabla = ttk.Treeview(frame, columns=columns, show="headings", height=10)
+    tabla.grid(row=3, column=0, columnspan=4, padx=5, pady=5)
+
+    for col in columns:
+        tabla.heading(col, text=col)
+        tabla.column(col, minwidth=0, width=100)
+
     tabla.bind("<Double-1>", ver_detalles)
 
-    # Crear el frame de filtros
-    frame_filtros = ttk.Frame(root)
-    frame_filtros.pack(pady=10, padx=10, fill=tk.X)
+    frame_botones = tk.Frame(root)
+    frame_botones.pack(padx=10, pady=10)
 
-    # Filtros
-    ttk.Label(frame_filtros, text="Semana:").grid(row=0, column=0, padx=5, pady=5)
-    filtro_semana = tk.StringVar()
-    ttk.Entry(frame_filtros, textvariable=filtro_semana).grid(row=0, column=1, padx=5, pady=5)
+    boton_eliminar = ttk.Button(frame_botones, text="Eliminar", command=eliminar_registro)
+    boton_eliminar.grid(row=0, column=0, padx=5, pady=5)
 
-    ttk.Label(frame_filtros, text="Número de Cosecha:").grid(row=1, column=0, padx=5, pady=5)
-    filtro_num_cosecha = tk.StringVar()
-    ttk.Entry(frame_filtros, textvariable=filtro_num_cosecha).grid(row=1, column=1, padx=5, pady=5)
+    boton_actualizar = ttk.Button(frame_botones, text="Actualizar", command=actualizar_registro)
+    boton_actualizar.grid(row=0, column=1, padx=5, pady=5)
 
-    ttk.Label(frame_filtros, text="Ubicación:").grid(row=2, column=0, padx=5, pady=5)
-    filtro_ubicacion = tk.StringVar()
-    ttk.Entry(frame_filtros, textvariable=filtro_ubicacion).grid(row=2, column=1, padx=5, pady=5)
+    boton_reporte = ttk.Button(frame_botones, text="Generar Reporte PDF", command=generar_reporte)
+    boton_reporte.grid(row=0, column=2, padx=5, pady=5)
 
-    ttk.Label(frame_filtros, text="Tipo de Lechuga:").grid(row=3, column=0, padx=5, pady=5)
-    filtro_tipo_lechuga = tk.StringVar()
-    ttk.Entry(frame_filtros, textvariable=filtro_tipo_lechuga).grid(row=3, column=1, padx=5, pady=5)
+    boton_reporte_excel = ttk.Button(frame_botones, text="Generar Reporte Excel", command=generar_reporte_excel)
+    boton_reporte_excel.grid(row=0, column=3, padx=5, pady=5)
 
-    ttk.Label(frame_filtros, text="Tipo de Siembra:").grid(row=4, column=0, padx=5, pady=5)
-    filtro_tipo_siembra = tk.StringVar()
-    ttk.Entry(frame_filtros, textvariable=filtro_tipo_siembra).grid(row=4, column=1, padx=5, pady=5)
-
-    # Botones con estilos ttk
-    boton_detalles = ttk.Button(root, text="Ver Detalles", command=ver_detalles)
-    boton_detalles.pack(pady=5)
-
-    boton_eliminar = ttk.Button(root, text="Eliminar", command=eliminar_registro)
-    boton_eliminar.pack(pady=5)
-
-    boton_actualizar = ttk.Button(root, text="Actualizar", command=actualizar_registro)
-    boton_actualizar.pack(pady=5)
-
-    boton_reporte = ttk.Button(root, text="Generar Reporte", command=generar_reporte)
-    boton_reporte.pack(pady=10)
-
-    # Mostrar los datos inicialmente
     show_data()
-
-    # Ejecutar la interfaz
-    root.mainloop()
-
-    # Cerrar la conexión con PostgreSQL
-    cur.close()
-    conn.close()
-
-
