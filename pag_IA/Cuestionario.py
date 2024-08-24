@@ -6,8 +6,101 @@ import uuid
 import os
 import shutil
 import psycopg2
+import pandas as pd
+
+def upload_excel():
+    filepath = filedialog.askopenfilename(
+        title="Seleccionar archivo Excel",
+        filetypes=[("Archivos Excel", "*.xlsx;*.xls")]
+    )
+
+    if filepath:
+        try:
+            # Leer el archivo Excel
+            df = pd.read_excel(filepath)
+
+            # Iterar sobre cada fila y guardar los datos en la base de datos
+            for index, row in df.iterrows():
+                siembra = row['Tipo de Siembra']
+                ubicacion = row['Ubicación']
+                lechuga = row['Tipo de Lechuga']
+                af = row['AF']
+                h = row['H']
+                semana = row['Semana']
+                num_cosecha = row['Nº Siembra']
+                observaciones = row['Observaciones']
+
+                # Validación de campos numéricos
+                try:
+                    float(af)
+                    float(h)
+                    float(semana)
+                    float(num_cosecha)
+                except ValueError:
+                    messagebox.showerror(
+                        "Error", f"Los campos AF, H, Semana y Número de Siembra deben ser números válidos en la fila {index + 1}."
+                    )
+                    continue
+
+                # Guardar datos en la base de datos
+                save_data_to_db(siembra, ubicacion, lechuga, af, h, semana, num_cosecha, observaciones)
+
+            messagebox.showinfo("Éxito", "Datos cargados correctamente desde el archivo Excel.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error al procesar el archivo Excel: {str(e)}")
 
 
+def save_data_to_db(siembra, ubicacion, lechuga, af, h, semana, num_cosecha, observaciones):
+    # Generar UUIDs
+    id_tip_siembra = str(uuid.uuid4())
+    id_tipo_lechuga = str(uuid.uuid4())
+    id_lechuga = str(uuid.uuid4())
+    id_datos = str(uuid.uuid4())
+
+    # Conectar a la base de datos PostgreSQL
+    try:
+        conn = psycopg2.connect(
+            user="postgres",
+            password="Yamile25",
+            host="localhost",
+            port="5432",
+            database="Lestoma"
+        )
+        cursor = conn.cursor()
+
+        # Insertar en TBTipoSiembra
+        cursor.execute("""
+        INSERT INTO "Hidroponia"."TBTipoSiembra" ("PKIdTipSiembra", "Tip_siembra")
+        VALUES (%s, %s);
+        """, (id_tip_siembra, siembra))
+
+        # Insertar en TBTipoLechuga
+        cursor.execute("""
+        INSERT INTO "Hidroponia"."TBTipoLechuga" ("PKIdTipoLechuga", "TipoLechuga")
+        VALUES (%s, %s);
+        """, (id_tipo_lechuga, lechuga))
+
+        # Insertar en TBLechuga
+        cursor.execute("""
+        INSERT INTO "Hidroponia"."TBLechuga" ("PKIdLechuga", "FKIdTipoLechuga", "FKIdTipSiembra", "Ubicacion")
+        VALUES (%s, %s, %s, %s);
+        """, (id_lechuga, id_tipo_lechuga, id_tip_siembra, ubicacion))
+
+        # Insertar en TBDatos
+        cursor.execute("""
+        INSERT INTO "Hidroponia"."TBDatos" ("PKIdDatos", "AF", "H", "Semana", "Num_cosecha", "Observaciones", "FKIdLechuga")
+        VALUES (%s, %s, %s, %s, %s, %s, %s);
+        """, (id_datos, af, h, semana, num_cosecha, observaciones, id_lechuga))
+
+        # Confirmar cambios
+        conn.commit()
+    except psycopg2.Error as e:
+        messagebox.showerror("Error", f"Error al guardar los datos: {e.pgcode} - {e.pgerror}")
+        conn.rollback()
+    finally:
+        if conn:
+            cursor.close()
+            conn.close()
 def validate_numeric_input(new_value):
     if new_value == "" or new_value.replace(".", "", 1).isdigit():
         return True
@@ -253,3 +346,4 @@ def main(frame):
     ttk.Button(container, text="Seleccionar Imagen", command=select_image).grid(row=10, column=3, sticky=tk.W)
 
     ttk.Button(container, text="Guardar", command=save_data).grid(row=12, column=2, sticky=tk.E)
+    ttk.Button(container, text="Subir Masivo", command=upload_excel).grid(row=12, column=3, sticky=tk.E)
