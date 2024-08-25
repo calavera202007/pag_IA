@@ -144,14 +144,6 @@ class MainApp(tk.Tk):
             ver_tabla.main(frame)
         elif self.current_page == "Cuestionario":
             Cuestionario.main(frame)
-        elif self.current_page == "Salir":
-            self.quit_app()
-
-    import tkinter as tk
-    from tkinter import ttk
-
-    import tkinter as tk
-    from tkinter import ttk
 
     def mostrar_graficos_modelo_matematico(self, parent):
         try:
@@ -196,11 +188,19 @@ class MainApp(tk.Tk):
 
     def on_button_click(self, page_name):
         self.current_page = page_name
-        self.create_main_content()
+        if page_name == "Salir":
+            self.confirm_exit()  # Solo llama a confirm_exit si la página es "Salir"
+        else:
+            self.create_main_content()
 
-        if page_name == "Salir":  # Verificar si la página es "Salir"
-            self.quit_app()  # Llamar a la función para cerrar la aplicación
-
+    def confirm_exit(self):
+        response = messagebox.askyesno("Confirmar Salida", "¿Estás seguro de que quieres salir?")
+        if response:
+            self.quit_app()
+        else:
+            # Redirigir a la página de inicio
+            self.current_page = "Inicio"
+            self.create_main_content()
 
     def apply_dark_mode(self):
         self.colors = self.get_colors()
@@ -258,7 +258,7 @@ class MainApp(tk.Tk):
 
     def quit_app(self):
         try:
-            self.destroy()
+            self.destroy()  # Usa 'self.destroy()' para cerrar la ventana principal
         except tk.TclError:
             pass
 
