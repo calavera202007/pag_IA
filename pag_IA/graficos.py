@@ -1,5 +1,6 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
 from sqlalchemy import create_engine
@@ -46,10 +47,16 @@ def mostrar_grafico_crecimiento_plantas(parent, main_content_widgets):
     datos['AF'] = pd.to_numeric(datos['AF'], errors='coerce')
     datos = datos.dropna(subset=['AF'])
 
-    fig, ax = plt.subplots(figsize=(8, 6))  # Tamaño de la figura ajustado
+    main_frame = ttk.Frame(parent)
+    main_frame.pack(fill=tk.BOTH, expand=True)
+
+    # Crear un frame para el gráfico
+    graph_frame = ttk.Frame(main_frame)
+    graph_frame.pack(fill=tk.BOTH, expand=True)
+
+    fig, ax = plt.subplots(figsize=(6, 4))  # Reducido el tamaño vertical
 
     lines = []
-    # Iterar sobre cada combinación de TipoLechuga y Num_cosecha
     for (tipo_lechuga, num_cosecha) in datos[['TipoLechuga', 'Num_cosecha']].drop_duplicates().itertuples(index=False):
         datos_filtro = datos[(datos['TipoLechuga'] == tipo_lechuga) & (datos['Num_cosecha'] == num_cosecha)]
         promedios_semanales = datos_filtro.groupby('Semana')['AF'].mean().reset_index()
@@ -60,18 +67,33 @@ def mostrar_grafico_crecimiento_plantas(parent, main_content_widgets):
     ax.set_xlabel('Semana')
     ax.set_ylabel('Crecimiento (AF)')
     ax.set_title('Crecimiento de Plantas en Agua por Cosecha y Tipo')
-    ax.legend(loc='best')  # Coloca la leyenda en la mejor posición
+    ax.legend(loc='best', fontsize='small')  # Reducido el tamaño de la leyenda
     ax.grid(True)
 
-    # Agregar tooltips
     cursor = mplcursors.cursor(lines, hover=True)
     cursor.connect("add", lambda sel: sel.annotation.set_text(
         f'Semana: {sel.target[0]:.1f}\nAF: {sel.target[1]:.2f}\n{sel.artist.get_label()}'))
 
-    canvas = FigureCanvasTkAgg(fig, master=parent)
+    canvas = FigureCanvasTkAgg(fig, master=graph_frame)
     canvas.draw()
     canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-    main_content_widgets.append(canvas.get_tk_widget())
+
+    # Crear un frame para contener la información adicional
+    info_frame = ttk.Frame(main_frame)
+    info_frame.pack(fill=tk.X, padx=10, pady=5)
+
+    # Agregar información resumida
+    info_text = "Este gráfico muestra el crecimiento de las plantas de diferentes tipos de lechuga\n"
+    info_text += f"en sistemas hidroponicos a lo largo de varias semanas.\n"
+
+    info_label = ttk.Label(info_frame, text=info_text, wraplength=500, justify=tk.LEFT)
+    info_label.pack(fill=tk.X, padx=5, pady=5)
+
+    # Añadir el frame principal a main_content_widgets
+    main_content_widgets.append(main_frame)
+
+    # Forzar la actualización de la interfaz
+    parent.update_idletasks()
 
 def mostrar_grafico_crecimiento_plantas_tierra(parent, main_content_widgets):
     query = """
@@ -93,10 +115,17 @@ def mostrar_grafico_crecimiento_plantas_tierra(parent, main_content_widgets):
     datos['AF'] = pd.to_numeric(datos['AF'], errors='coerce')
     datos = datos.dropna(subset=['AF'])
 
-    fig, ax = plt.subplots(figsize=(8, 6))  # Tamaño de la figura ajustado
+    # Crear un frame principal
+    main_frame = ttk.Frame(parent)
+    main_frame.pack(fill=tk.BOTH, expand=True)
+
+    # Crear un frame para el gráfico
+    graph_frame = ttk.Frame(main_frame)
+    graph_frame.pack(fill=tk.BOTH, expand=True)
+
+    fig, ax = plt.subplots(figsize=(6, 4))  # Reducido el tamaño vertical
 
     lines = []
-    # Iterar sobre cada combinación de TipoLechuga y Num_cosecha
     for (tipo_lechuga, num_cosecha) in datos[['TipoLechuga', 'Num_cosecha']].drop_duplicates().itertuples(index=False):
         datos_filtro = datos[(datos['TipoLechuga'] == tipo_lechuga) & (datos['Num_cosecha'] == num_cosecha)]
         promedios_semanales = datos_filtro.groupby('Semana')['AF'].mean().reset_index()
@@ -107,19 +136,35 @@ def mostrar_grafico_crecimiento_plantas_tierra(parent, main_content_widgets):
     ax.set_xlabel('Semana')
     ax.set_ylabel('Crecimiento (AF)')
     ax.set_title('Crecimiento de Plantas en Tierra por Cosecha y Tipo')
-    ax.legend(loc='best')  # Coloca la leyenda en la mejor posición
+    ax.legend(loc='best', fontsize='small')  # Reducido el tamaño de la leyenda
     ax.grid(True)
 
-    # Agregar tooltips
     cursor = mplcursors.cursor(lines, hover=True)
     cursor.connect("add", lambda sel: sel.annotation.set_text(
         f'Semana: {sel.target[0]:.1f}\nAF: {sel.target[1]:.2f}\n{sel.artist.get_label()}'))
 
-    canvas = FigureCanvasTkAgg(fig, master=parent)
+    canvas = FigureCanvasTkAgg(fig, master=graph_frame)
     canvas.draw()
     canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-    main_content_widgets.append(canvas.get_tk_widget())
 
+    # Crear un frame para contener la información adicional
+    info_frame = ttk.Frame(main_frame)
+    info_frame.pack(fill=tk.X, padx=10, pady=5)
+
+    # Agregar información resumida
+    info_text = "Este gráfico muestra el crecimiento de las plantas de diferentes tipos de lechuga\n"
+    info_text += f"cultivadas en tierra a lo largo de varias semanas.\n"
+
+    info_label = ttk.Label(info_frame, text=info_text, wraplength=500, justify=tk.LEFT)
+    info_label.pack(fill=tk.X, padx=5, pady=5)
+
+    # Añadir el frame principal a main_content_widgets
+    main_content_widgets.append(main_frame)
+
+    # Forzar la actualización de la interfaz
+    parent.update_idletasks()
+
+#####@@
 def mostrar_grafico_n_hojas(parent, main_content_widgets):
     query = """
             SELECT d."Semana", d."NumHojas", d."Num_cosecha", l."Ubicacion", tl."TipoLechuga"
@@ -140,7 +185,11 @@ def mostrar_grafico_n_hojas(parent, main_content_widgets):
     datos['NumHojas'] = pd.to_numeric(datos['NumHojas'], errors='coerce')
     datos = datos.dropna(subset=['NumHojas'])
 
-    fig, ax = plt.subplots(figsize=(8, 6))  # Tamaño de la figura ajustado
+    main_frame = ttk.Frame(parent)
+    main_frame.pack(fill=tk.BOTH, expand=True)
+
+    # Crear el gráfico
+    fig, ax = plt.subplots(figsize=(6, 4))  # Ajusta el tamaño según sea necesario
 
     lines = []
     # Iterar sobre cada combinación de TipoLechuga y Num_cosecha
@@ -154,7 +203,7 @@ def mostrar_grafico_n_hojas(parent, main_content_widgets):
     ax.set_xlabel('Semana')
     ax.set_ylabel('Número de Hojas')
     ax.set_title('Número de Hojas de Plantas en Agua Semana a Semana')
-    ax.legend(loc='best')  # Coloca la leyenda en la mejor posición
+    ax.legend(loc='best', fontsize='x-small')  # Ajusta el tamaño de la fuente de la leyenda
     ax.grid(True)
 
     # Agregar tooltips
@@ -162,10 +211,28 @@ def mostrar_grafico_n_hojas(parent, main_content_widgets):
     cursor.connect("add", lambda sel: sel.annotation.set_text(
         f'Semana: {sel.target[0]:.1f}\nNúmero de Hojas: {sel.target[1]:.2f}\n{sel.artist.get_label()}'))
 
-    canvas = FigureCanvasTkAgg(fig, master=parent)
+    # Crear un frame para el gráfico
+    graph_frame = ttk.Frame(main_frame)
+    graph_frame.pack(fill=tk.BOTH, expand=True)
+
+    canvas = FigureCanvasTkAgg(fig, master=graph_frame)
     canvas.draw()
-    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-    main_content_widgets.append(canvas.get_tk_widget())
+    canvas_widget = canvas.get_tk_widget()
+    canvas_widget.pack(fill=tk.BOTH, expand=True)
+
+    # Crear un frame para contener la información adicional
+    info_frame = ttk.Frame(main_frame)
+    info_frame.pack(fill=tk.X, padx=10, pady=5)
+
+    # Agregar información resumida
+    info_text = "Este gráfico muestra la evolución del número de hojas de diferentes tipos de lechuga\n"
+    info_text += f"cultivadas en sistemas hidroponicos a lo largo de varias semanas.\n"
+
+    info_label = ttk.Label(info_frame, text=info_text, wraplength=500, justify=tk.LEFT)
+    info_label.pack(fill=tk.X, padx=5, pady=5)
+
+    # Agregar el frame principal a main_content_widgets
+    main_content_widgets.append(main_frame)
 
 def mostrar_grafico_n_hojas_tierra(parent, main_content_widgets):
     query = """
@@ -187,7 +254,11 @@ def mostrar_grafico_n_hojas_tierra(parent, main_content_widgets):
     datos['NumHojas'] = pd.to_numeric(datos['NumHojas'], errors='coerce')
     datos = datos.dropna(subset=['NumHojas'])
 
-    fig, ax = plt.subplots(figsize=(8, 6))  # Tamaño de la figura ajustado
+    main_frame = ttk.Frame(parent)
+    main_frame.pack(fill=tk.BOTH, expand=True)
+
+    # Crear el gráfico
+    fig, ax = plt.subplots(figsize=(6, 4))  # Ajusta el tamaño según sea necesario
 
     lines = []
     # Iterar sobre cada combinación de TipoLechuga y Num_cosecha
@@ -195,13 +266,13 @@ def mostrar_grafico_n_hojas_tierra(parent, main_content_widgets):
         datos_filtro = datos[(datos['TipoLechuga'] == tipo_lechuga) & (datos['Num_cosecha'] == num_cosecha)]
         promedios_semanales = datos_filtro.groupby('Semana')['NumHojas'].mean().reset_index()
         line, = ax.plot(promedios_semanales['Semana'], promedios_semanales['NumHojas'],
-                 label=f'{tipo_lechuga} - Cosecha {num_cosecha}')
+                        label=f'{tipo_lechuga} - Cosecha {num_cosecha}')
         lines.append(line)
 
     ax.set_xlabel('Semana')
     ax.set_ylabel('Número de Hojas')
     ax.set_title('Número de Hojas de Plantas en Tierra Semana a Semana')
-    ax.legend(loc='best')  # Coloca la leyenda en la mejor posición
+    ax.legend(loc='best', fontsize='x-small')  # Ajusta el tamaño de la fuente de la leyenda
     ax.grid(True)
 
     # Agregar tooltips
@@ -209,10 +280,28 @@ def mostrar_grafico_n_hojas_tierra(parent, main_content_widgets):
     cursor.connect("add", lambda sel: sel.annotation.set_text(
         f'Semana: {sel.target[0]:.1f}\nNúmero de Hojas: {sel.target[1]:.2f}\n{sel.artist.get_label()}'))
 
-    canvas = FigureCanvasTkAgg(fig, master=parent)
+    # Crear un frame para el gráfico
+    graph_frame = ttk.Frame(main_frame)
+    graph_frame.pack(fill=tk.BOTH, expand=True)
+
+    canvas = FigureCanvasTkAgg(fig, master=graph_frame)
     canvas.draw()
-    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-    main_content_widgets.append(canvas.get_tk_widget())
+    canvas_widget = canvas.get_tk_widget()
+    canvas_widget.pack(fill=tk.BOTH, expand=True)
+
+    # Crear un frame para contener la información adicional
+    info_frame = ttk.Frame(main_frame)
+    info_frame.pack(fill=tk.X, padx=10, pady=5)
+
+    # Agregar información resumida
+    info_text = "Este gráfico muestra la evolución del número de hojas de diferentes tipos de lechuga\n"
+    info_text += f"cultivadas en camas de tierra a lo largo de varias semanas.\n"
+
+    info_label = ttk.Label(info_frame, text=info_text, wraplength=500, justify=tk.LEFT)
+    info_label.pack(fill=tk.X, padx=5, pady=5)
+
+    # Agregar el frame principal a main_content_widgets
+    main_content_widgets.append(main_frame)
 
 
 def mostrar_grafico_af_plantas_agua_v1(parent, main_content_widgets):
@@ -236,7 +325,11 @@ def mostrar_grafico_af_plantas_agua_v1(parent, main_content_widgets):
     datos = datos.dropna(subset=['AF'])
 
     datos_v1 = datos[datos['TipoLechuga'] == 'V1']
-    fig1, ax1 = plt.subplots(figsize=(5, 5))
+    main_frame = ttk.Frame(parent)
+    main_frame.pack(fill=tk.BOTH, expand=True)
+
+    # Crear el gráfico
+    fig1, ax1 = plt.subplots(figsize=(6, 4))  # Ajusta el tamaño según sea necesario
     lines = []
     for (ubicacion, tipo_lechuga, num_cosecha, planta) in datos_v1[
         ['Ubicacion', 'TipoLechuga', 'Num_cosecha', 'Planta']].drop_duplicates().itertuples(index=False):
@@ -250,7 +343,7 @@ def mostrar_grafico_af_plantas_agua_v1(parent, main_content_widgets):
                              label=f'{ubicacion} - {tipo_lechuga} - Cosecha {num_cosecha} - Planta {planta}')
             lines.append(line)
 
-    ax1.set_title('AF de Plantas (V2) Agua Semana a Semana')
+    ax1.set_title('AF de Plantas (V1) Agua Semana a Semana')
     ax1.set_xlabel('Semana')
     ax1.set_ylabel('AF')
     ax1.legend(loc='best', fontsize='x-small', framealpha=0.5)
@@ -262,10 +355,28 @@ def mostrar_grafico_af_plantas_agua_v1(parent, main_content_widgets):
     cursor.connect("add", lambda sel: sel.annotation.set_text(
         f'Semana: {sel.target[0]:.1f}\nAF: {sel.target[1]:.2f}\n{sel.artist.get_label()}'))
 
-    canvas2 = FigureCanvasTkAgg(fig1, master=parent)
-    canvas2.draw()
-    canvas2.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-    main_content_widgets.append(canvas2.get_tk_widget())
+    # Crear un frame para el gráfico
+    graph_frame = ttk.Frame(main_frame)
+    graph_frame.pack(fill=tk.BOTH, expand=True)
+
+    canvas1 = FigureCanvasTkAgg(fig1, master=graph_frame)
+    canvas1.draw()
+    canvas_widget = canvas1.get_tk_widget()
+    canvas_widget.pack(fill=tk.BOTH, expand=True)
+
+    # Crear un frame para contener la información adicional
+    info_frame = ttk.Frame(main_frame)
+    info_frame.pack(fill=tk.X, padx=10, pady=5)
+
+    # Agregar información resumida
+    info_text = "Se observan variaciones en el crecimiento del area foliar entre las distintas plantas en camas\n"
+    info_text += f"hidroponicas de la priemra variedad, lo que puede indicar diferencias en las condiciones de cultivo o en la respuesta individual de cada planta.\n"
+
+    info_label = ttk.Label(info_frame, text=info_text, wraplength=500, justify=tk.LEFT)
+    info_label.pack(fill=tk.X, padx=5, pady=5)
+
+    # Agregar el frame principal a main_content_widgets
+    main_content_widgets.append(main_frame)
 
 
 def mostrar_grafico_af_plantas_agua_v2(parent, main_content_widgets):
@@ -289,7 +400,11 @@ def mostrar_grafico_af_plantas_agua_v2(parent, main_content_widgets):
     datos = datos.dropna(subset=['AF'])
 
     datos_v2 = datos[datos['TipoLechuga'] == 'V2']
-    fig2, ax2 = plt.subplots(figsize=(5, 5))
+    main_frame = ttk.Frame(parent)
+    main_frame.pack(fill=tk.BOTH, expand=True)
+
+    # Crear el gráfico
+    fig2, ax2 = plt.subplots(figsize=(6, 4))  # Ajusta el tamaño según sea necesario
     lines = []
     for (ubicacion, tipo_lechuga, num_cosecha, planta) in datos_v2[
         ['Ubicacion', 'TipoLechuga', 'Num_cosecha', 'Planta']].drop_duplicates().itertuples(index=False):
@@ -315,10 +430,28 @@ def mostrar_grafico_af_plantas_agua_v2(parent, main_content_widgets):
     cursor.connect("add", lambda sel: sel.annotation.set_text(
         f'Semana: {sel.target[0]:.1f}\nAF: {sel.target[1]:.2f}\n{sel.artist.get_label()}'))
 
-    canvas2 = FigureCanvasTkAgg(fig2, master=parent)
+    # Crear un frame para el gráfico
+    graph_frame = ttk.Frame(main_frame)
+    graph_frame.pack(fill=tk.BOTH, expand=True)
+
+    canvas2 = FigureCanvasTkAgg(fig2, master=graph_frame)
     canvas2.draw()
-    canvas2.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-    main_content_widgets.append(canvas2.get_tk_widget())
+    canvas_widget = canvas2.get_tk_widget()
+    canvas_widget.pack(fill=tk.BOTH, expand=True)
+
+    # Crear un frame para contener la información adicional
+    info_frame = ttk.Frame(main_frame)
+    info_frame.pack(fill=tk.X, padx=10, pady=5)
+
+    # Agregar información adicional
+    info_text = "Se observan variaciones en el crecimiento del area foliar entre las distintas plantas en camas \n"
+    info_text += f"hidroponicas, lo que puede indicar diferencias en las condiciones de cultivo o en la respuesta individual de cada planta.\n"
+
+    info_label = ttk.Label(info_frame, text=info_text, wraplength=500, justify=tk.LEFT)
+    info_label.pack(fill=tk.X, padx=5, pady=5)
+
+    # Agregar el frame principal a main_content_widgets
+    main_content_widgets.append(main_frame)
 
 def mostrar_grafico_af_plantas_tierra_v1(parent, main_content_widgets):
     query = """
@@ -341,7 +474,11 @@ def mostrar_grafico_af_plantas_tierra_v1(parent, main_content_widgets):
     datos = datos.dropna(subset=['AF'])
 
     datos_v1 = datos[datos['TipoLechuga'] == 'V1']
-    fig1, ax1 = plt.subplots(figsize=(5, 5))
+    main_frame = ttk.Frame(parent)
+    main_frame.pack(fill=tk.BOTH, expand=True)
+
+    # Crear el gráfico
+    fig1, ax1 = plt.subplots(figsize=(6, 4))  # Ajusta el tamaño según sea necesario
     lines = []
     for (ubicacion, tipo_lechuga, num_cosecha, planta) in datos_v1[
         ['Ubicacion', 'TipoLechuga', 'Num_cosecha', 'Planta']].drop_duplicates().itertuples(index=False):
@@ -355,7 +492,7 @@ def mostrar_grafico_af_plantas_tierra_v1(parent, main_content_widgets):
                              label=f'{ubicacion} - {tipo_lechuga} - Cosecha {num_cosecha} - Planta {planta}')
             lines.append(line)
 
-    ax1.set_title('AF de Plantas (V2) Tierra Semana a Semana')
+    ax1.set_title('AF de Plantas (V1) Tierra Semana a Semana')
     ax1.set_xlabel('Semana')
     ax1.set_ylabel('AF')
     ax1.legend(loc='best', fontsize='x-small', framealpha=0.5)
@@ -367,10 +504,28 @@ def mostrar_grafico_af_plantas_tierra_v1(parent, main_content_widgets):
     cursor.connect("add", lambda sel: sel.annotation.set_text(
         f'Semana: {sel.target[0]:.1f}\nAF: {sel.target[1]:.2f}\n{sel.artist.get_label()}'))
 
-    canvas2 = FigureCanvasTkAgg(fig1, master=parent)
-    canvas2.draw()
-    canvas2.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-    main_content_widgets.append(canvas2.get_tk_widget())
+    # Crear un frame para el gráfico
+    graph_frame = ttk.Frame(main_frame)
+    graph_frame.pack(fill=tk.BOTH, expand=True)
+
+    canvas1 = FigureCanvasTkAgg(fig1, master=graph_frame)
+    canvas1.draw()
+    canvas_widget = canvas1.get_tk_widget()
+    canvas_widget.pack(fill=tk.BOTH, expand=True)
+
+    # Crear un frame para contener la información adicional
+    info_frame = ttk.Frame(main_frame)
+    info_frame.pack(fill=tk.X, padx=10, pady=5)
+
+    # Agregar información resumida
+    info_text = "Se observan variaciones en el crecimiento del area foliar entre las distintas plantas en camas de\n"
+    info_text += f"tierra de la priemra variedad, lo que puede indicar diferencias en las condiciones de cultivo o en la respuesta individual de cada planta.\n"
+
+    info_label = ttk.Label(info_frame, text=info_text, wraplength=500, justify=tk.LEFT)
+    info_label.pack(fill=tk.X, padx=5, pady=5)
+
+    # Agregar el frame principal a main_content_widgets
+    main_content_widgets.append(main_frame)
 
 
 def mostrar_grafico_af_plantas_tierra_v2(parent, main_content_widgets):
@@ -394,7 +549,11 @@ def mostrar_grafico_af_plantas_tierra_v2(parent, main_content_widgets):
     datos = datos.dropna(subset=['AF'])
 
     datos_v2 = datos[datos['TipoLechuga'] == 'V2']
-    fig2, ax2 = plt.subplots(figsize=(5, 5))
+    main_frame = ttk.Frame(parent)
+    main_frame.pack(fill=tk.BOTH, expand=True)
+
+    # Crear el gráfico
+    fig2, ax2 = plt.subplots(figsize=(6, 4))  # Ajusta el tamaño según sea necesario
     lines = []
     for (ubicacion, tipo_lechuga, num_cosecha, planta) in datos_v2[
         ['Ubicacion', 'TipoLechuga', 'Num_cosecha', 'Planta']].drop_duplicates().itertuples(index=False):
@@ -420,10 +579,30 @@ def mostrar_grafico_af_plantas_tierra_v2(parent, main_content_widgets):
     cursor.connect("add", lambda sel: sel.annotation.set_text(
         f'Semana: {sel.target[0]:.1f}\nAF: {sel.target[1]:.2f}\n{sel.artist.get_label()}'))
 
-    canvas2 = FigureCanvasTkAgg(fig2, master=parent)
+    # Crear un frame para el gráfico
+    graph_frame = ttk.Frame(main_frame)
+    graph_frame.pack(fill=tk.BOTH, expand=True)
+
+    canvas2 = FigureCanvasTkAgg(fig2, master=graph_frame)
     canvas2.draw()
-    canvas2.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
-    main_content_widgets.append(canvas2.get_tk_widget())
+    canvas_widget = canvas2.get_tk_widget()
+    canvas_widget.pack(fill=tk.BOTH, expand=True)
+
+    # Crear un frame para contener la información adicional
+    info_frame = ttk.Frame(main_frame)
+    info_frame.pack(fill=tk.X, padx=10, pady=5)
+
+    # Agregar información adicional
+    info_text = "Se observan variaciones en el crecimiento del area foliar entre las distintas plantas en camas de\n"
+    info_text += f"tierra de la segunda variedad, lo que puede indicar diferencias en las condiciones de cultivo o en la respuesta individual de cada planta.\n"
+
+
+
+    info_label = ttk.Label(info_frame, text=info_text, wraplength=500, justify=tk.LEFT)
+    info_label.pack(fill=tk.X, padx=5, pady=5)
+
+    # Agregar el frame principal a main_content_widgets
+    main_content_widgets.append(main_frame)
 
 ##
 def mostrar_grafico_regresion_polynomial(parent, main_content_widgets):
