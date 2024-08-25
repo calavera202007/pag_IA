@@ -19,11 +19,16 @@ def upload_excel():
             # Leer el archivo Excel
             df = pd.read_excel(filepath)
 
+            # Reemplazar comas por puntos para asegurar la correcta conversión a float
+            df = df.replace({',': '.'}, regex=True)
+
             # Iterar sobre cada fila y guardar los datos en la base de datos
             for index, row in df.iterrows():
                 siembra = row['Tipo de Siembra']
                 ubicacion = row['Ubicación']
                 lechuga = row['Tipo de Lechuga']
+                planta = row['Planta']
+                num_h = row['NumHojas']
                 af = row['AF']
                 h = row['H']
                 semana = row['Semana']
@@ -36,21 +41,23 @@ def upload_excel():
                     float(h)
                     float(semana)
                     float(num_cosecha)
+                    int(planta)
+                    int(num_h)
                 except ValueError:
                     messagebox.showerror(
-                        "Error", f"Los campos AF, H, Semana y Número de Siembra deben ser números válidos en la fila {index + 1}."
+                        "Error", f"Los campos AF, H, Semana, Número de Siembra, Planta y NumHojas deben ser números válidos en la fila {index + 1}."
                     )
                     continue
 
                 # Guardar datos en la base de datos
-                save_data_to_db(siembra, ubicacion, lechuga, af, h, semana, num_cosecha, observaciones)
+                save_data_to_db(siembra, ubicacion, lechuga, planta, num_h, af, h, semana, num_cosecha, observaciones)
 
             messagebox.showinfo("Éxito", "Datos cargados correctamente desde el archivo Excel.")
         except Exception as e:
             messagebox.showerror("Error", f"Error al procesar el archivo Excel: {str(e)}")
 
 
-def save_data_to_db(siembra, ubicacion, lechuga, af, h, semana, num_cosecha, observaciones):
+def save_data_to_db(siembra, ubicacion, lechuga, planta, num_h, af, h, semana, num_cosecha, observaciones):
     # Generar UUIDs
     id_tip_siembra = str(uuid.uuid4())
     id_tipo_lechuga = str(uuid.uuid4())
@@ -82,15 +89,15 @@ def save_data_to_db(siembra, ubicacion, lechuga, af, h, semana, num_cosecha, obs
 
         # Insertar en TBLechuga
         cursor.execute("""
-        INSERT INTO "Hidroponia"."TBLechuga" ("PKIdLechuga", "FKIdTipoLechuga", "FKIdTipSiembra", "Ubicacion")
-        VALUES (%s, %s, %s, %s);
-        """, (id_lechuga, id_tipo_lechuga, id_tip_siembra, ubicacion))
+        INSERT INTO "Hidroponia"."TBLechuga" ("PKIdLechuga", "FKIdTipoLechuga", "FKIdTipSiembra", "Ubicacion", "Planta")
+        VALUES (%s, %s, %s, %s, %s);
+        """, (id_lechuga, id_tipo_lechuga, id_tip_siembra, ubicacion, planta))
 
         # Insertar en TBDatos
         cursor.execute("""
-        INSERT INTO "Hidroponia"."TBDatos" ("PKIdDatos", "AF", "H", "Semana", "Num_cosecha", "Observaciones", "FKIdLechuga")
-        VALUES (%s, %s, %s, %s, %s, %s, %s);
-        """, (id_datos, af, h, semana, num_cosecha, observaciones, id_lechuga))
+        INSERT INTO "Hidroponia"."TBDatos" ("PKIdDatos", "AF", "H", "Semana", "Num_cosecha", "Observaciones", "FKIdLechuga", "NumHojas")
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+        """, (id_datos, af, h, semana, num_cosecha, observaciones, id_lechuga, num_h))
 
         # Confirmar cambios
         conn.commit()
@@ -101,6 +108,8 @@ def save_data_to_db(siembra, ubicacion, lechuga, af, h, semana, num_cosecha, obs
         if conn:
             cursor.close()
             conn.close()
+
+
 def validate_numeric_input(new_value):
     if new_value == "" or new_value.replace(".", "", 1).isdigit():
         return True
@@ -120,6 +129,8 @@ def save_data():
     siembra = siembra_var.get()
     ubicacion = ubicacion_var.get()
     lechuga = lechuga_var.get()
+    planta = planta_entry.get()
+    num_h = num_h_entry.get()
     af = af_entry.get()
     h = h_entry.get()
     semana = semana_entry.get()
@@ -134,6 +145,8 @@ def save_data():
         {'var': siembra_var, 'entry': None},
         {'var': ubicacion_var, 'entry': None},
         {'var': lechuga_var, 'entry': None},
+        {'var': tk.StringVar(value=planta), 'entry': planta_entry},
+        {'var': tk.StringVar(value=num_h), 'entry': num_h_entry},
         {'var': tk.StringVar(value=af), 'entry': af_entry},
         {'var': tk.StringVar(value=h), 'entry': h_entry},
         {'var': tk.StringVar(value=semana), 'entry': semana_entry},
@@ -142,7 +155,7 @@ def save_data():
 
     highlight_empty_fields(mandatory_fields)
 
-    if not all([siembra, ubicacion, lechuga, af, h, semana, num_cosecha]):
+    if not all([siembra, ubicacion, lechuga, planta, num_h, af, h, semana, num_cosecha]):
         messagebox.showerror("Error", "Por favor, complete todos los campos obligatorios.")
         return
 
@@ -152,6 +165,8 @@ def save_data():
         float(h)
         float(semana)
         float(num_cosecha)
+        int(planta)
+        int(num_h)
     except ValueError:
         messagebox.showerror("Error", "Los campos AF, H, Semana y Número de Siembra deben ser números válidos.")
         return
@@ -164,7 +179,6 @@ def save_data():
     id_reporte = str(uuid.uuid4())
     id_foto = str(uuid.uuid4()) if nombre_foto else None
 
-    # Conectar a la base de datos PostgreSQL
     try:
         conn = psycopg2.connect(
             user="postgres",
@@ -177,62 +191,59 @@ def save_data():
 
         # Insertar en TBTipoSiembra
         cursor.execute("""
-        INSERT INTO "Hidroponia"."TBTipoSiembra" ("PKIdTipSiembra", "Tip_siembra")
-        VALUES (%s, %s);
-        """, (id_tip_siembra, siembra))
+                INSERT INTO "Hidroponia"."TBTipoSiembra" ("PKIdTipSiembra", "Tip_siembra")
+                VALUES (%s, %s);
+            """, (id_tip_siembra, siembra))
 
         # Insertar en TBTipoLechuga
         cursor.execute("""
-        INSERT INTO "Hidroponia"."TBTipoLechuga" ("PKIdTipoLechuga", "TipoLechuga")
-        VALUES (%s, %s);
-        """, (id_tipo_lechuga, lechuga))
+                INSERT INTO "Hidroponia"."TBTipoLechuga" ("PKIdTipoLechuga", "TipoLechuga")
+                VALUES (%s, %s);
+            """, (id_tipo_lechuga, lechuga))
 
         # Insertar en TBLechuga
         cursor.execute("""
-        INSERT INTO "Hidroponia"."TBLechuga" ("PKIdLechuga", "FKIdTipoLechuga", "FKIdTipSiembra", "Ubicacion")
-        VALUES (%s, %s, %s, %s);
-        """, (id_lechuga, id_tipo_lechuga, id_tip_siembra, ubicacion))
+                INSERT INTO "Hidroponia"."TBLechuga" ("PKIdLechuga", "FKIdTipoLechuga", "FKIdTipSiembra", "Ubicacion", "Planta")
+                VALUES (%s, %s, %s, %s, %s);
+            """, (id_lechuga, id_tipo_lechuga, id_tip_siembra, ubicacion, planta))
 
-        # Insertar en TBFoto (si se proporcionó información)
+        # Insertar en TBFoto si se proporciona
         if nombre_foto:
             cursor.execute("""
-            INSERT INTO "Hidroponia"."TBFoto" ("PKIdFoto", "Nombre", "Ruta", "Descripcion")
-            VALUES (%s, %s, %s, %s);
-            """, (id_foto, nombre_foto, ruta_foto, descripcion_foto))
-        else:
-            id_foto = None  # Si no hay foto, asegurarse de que id_foto sea None
+                    INSERT INTO "Hidroponia"."TBFoto" ("PKIdFoto", "Nombre", "Ruta", "Descripcion")
+                    VALUES (%s, %s, %s, %s);
+                """, (id_foto, nombre_foto, ruta_foto, descripcion_foto))
 
         # Insertar en TBDatos
         cursor.execute("""
-        INSERT INTO "Hidroponia"."TBDatos" ("PKIdDatos", "AF", "H", "Semana", "Num_cosecha", "Observaciones", "FKIdLechuga")
-        VALUES (%s, %s, %s, %s, %s, %s, %s);
-        """, (id_datos, af, h, semana, num_cosecha, observaciones, id_lechuga))
+                INSERT INTO "Hidroponia"."TBDatos" ("PKIdDatos", "AF", "H", "Semana", "Num_cosecha", "Observaciones", "FKIdLechuga", "NumHojas")
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s);
+            """, (id_datos, af, h, semana, num_cosecha, observaciones, id_lechuga, num_h))
 
         # Insertar en TBReporte
         cursor.execute("""
-        INSERT INTO "Hidroponia"."TBReporte" ("PKIdReporte", "FKIdDatos", "FKIdFoto")
-        VALUES (%s, %s, %s);
-        """, (id_reporte, id_datos, id_foto))
+                INSERT INTO "Hidroponia"."TBReporte" ("PKIdReporte", "FKIdDatos", "FKIdFoto")
+                VALUES (%s, %s, %s);
+            """, (id_reporte, id_datos, id_foto))
 
-        # Confirmar cambios
         conn.commit()
         messagebox.showinfo("Éxito", "Datos guardados correctamente.")
-
-        # Limpiar campos de entrada
         clear_fields()
     except psycopg2.Error as e:
         messagebox.showerror("Error", f"Error al guardar los datos: {e.pgcode} - {e.pgerror}")
         conn.rollback()
     finally:
-        if conn:
-            cursor.close()
-            conn.close()
+        cursor.close()
+        conn.close()
+
 
 
 def clear_fields():
     siembra_var.set("Agua")
     ubicacion_var.set("L1")
     lechuga_var.set("V1")
+    planta_entry.delete(0, tk.END)
+    num_h_entry(0, tk.END)
     af_entry.delete(0, tk.END)
     h_entry.delete(0, tk.END)
     semana_entry.delete(0, tk.END)
@@ -242,6 +253,8 @@ def clear_fields():
     ruta_foto_entry.delete(0, tk.END)
     descripcion_foto_entry.delete(0, tk.END)
     # Restablecer el color de fondo de los campos
+    planta_entry.config(background='white')
+    num_h_entry.config(background='white')
     af_entry.config(background='white')
     h_entry.config(background='white')
     semana_entry.config(background='white')
@@ -269,7 +282,7 @@ def select_image():
 
 
 def main(frame):
-    global siembra_var, ubicacion_var, lechuga_var, af_entry, h_entry, semana_entry, num_cosecha_entry
+    global siembra_var, ubicacion_var, lechuga_var, planta_entry, num_h_entry, af_entry, h_entry, semana_entry, num_cosecha_entry
     global observaciones_entry, nombre_foto_entry, ruta_foto_entry, descripcion_foto_entry
 
     for widget in frame.winfo_children():
@@ -310,40 +323,49 @@ def main(frame):
     tk.Radiobutton(container, text="V4", variable=lechuga_var, value="V4", font=font_large).grid(row=3, column=5,
                                                                                                  sticky=tk.W)
 
-    ttk.Label(container, text="AF:", font=font_large).grid(row=4, column=1, sticky=tk.W)
+    ttk.Label(container, text="Numero Planta(1 al 4):", font=font_large).grid(row=4, column=1, sticky=tk.W)
+    planta_entry = ttk.Entry(container, font=font_large)
+    planta_entry.grid(row=4, column=2, sticky=(tk.W, tk.E))
+
+    ttk.Label(container, text="Numero de hojas:", font=font_large).grid(row=5, column=1, sticky=tk.W)
+    num_h_entry = ttk.Entry(container, font=font_large)  # Aquí debes definir num_h_entry correctamente
+    num_h_entry.grid(row=5, column=2, sticky=(tk.W, tk.E))
+
+    ttk.Label(container, text="AF:", font=font_large).grid(row=6, column=1, sticky=tk.W)
     af_entry = ttk.Entry(container, font=font_large)
-    af_entry.grid(row=4, column=2, sticky=(tk.W, tk.E))
+    af_entry.grid(row=6, column=2, sticky=(tk.W, tk.E))
 
-    ttk.Label(container, text="H:", font=font_large).grid(row=5, column=1, sticky=tk.W)
+    ttk.Label(container, text="H:", font=font_large).grid(row=7, column=1, sticky=tk.W)
     h_entry = ttk.Entry(container, font=font_large)
-    h_entry.grid(row=5, column=2, sticky=(tk.W, tk.E))
+    h_entry.grid(row=7, column=2, sticky=(tk.W, tk.E))
 
-    ttk.Label(container, text="Semana:", font=font_large).grid(row=6, column=1, sticky=tk.W)
+    ttk.Label(container, text="Semana:", font=font_large).grid(row=8, column=1, sticky=tk.W)
     semana_entry = ttk.Entry(container, font=font_large)
-    semana_entry.grid(row=6, column=2, sticky=(tk.W, tk.E))
+    semana_entry.grid(row=8, column=2, sticky=(tk.W, tk.E))
 
-    ttk.Label(container, text="Número de Cosecha:", font=font_large).grid(row=7, column=1, sticky=tk.W)
+    ttk.Label(container, text="Número de Cosecha:", font=font_large).grid(row=9, column=1, sticky=tk.W)
     num_cosecha_entry = ttk.Entry(container, font=font_large)
-    num_cosecha_entry.grid(row=7, column=2, sticky=(tk.W, tk.E))
+    num_cosecha_entry.grid(row=9, column=2, sticky=(tk.W, tk.E))
 
-    ttk.Label(container, text="Observaciones:", font=font_large).grid(row=8, column=1, sticky=tk.W)
+    ttk.Label(container, text="Observaciones:", font=font_large).grid(row=10, column=1, sticky=tk.W)
     observaciones_entry = ttk.Entry(container, font=font_large)
-    observaciones_entry.grid(row=8, column=2, sticky=(tk.W, tk.E))
+    observaciones_entry.grid(row=10, column=2, sticky=(tk.W, tk.E))
 
-    ttk.Label(container, text="Nombre Foto:", font=font_large).grid(row=9, column=1, sticky=tk.W)
+    ttk.Label(container, text="Nombre Foto:", font=font_large).grid(row=11, column=1, sticky=tk.W)
     nombre_foto_entry = ttk.Entry(container, font=font_large)
-    nombre_foto_entry.grid(row=9, column=2, sticky=(tk.W, tk.E))
+    nombre_foto_entry.grid(row=11, column=2, sticky=(tk.W, tk.E))
 
-    ttk.Label(container, text="Ruta Foto:", font=font_large).grid(row=10, column=1, sticky=tk.W)
+    ttk.Label(container, text="Ruta Foto:", font=font_large).grid(row=12, column=1, sticky=tk.W)
     ruta_foto_entry = ttk.Entry(container, font=font_large)
-    ruta_foto_entry.grid(row=10, column=2, sticky=(tk.W, tk.E))
+    ruta_foto_entry.grid(row=12, column=2, sticky=(tk.W, tk.E))
 
-    ttk.Label(container, text="Descripción Foto:", font=font_large).grid(row=11, column=1, sticky=tk.W)
+    ttk.Label(container, text="Descripción Foto:", font=font_large).grid(row=13, column=1, sticky=tk.W)
     descripcion_foto_entry = ttk.Entry(container, font=font_large)
-    descripcion_foto_entry.grid(row=11, column=2, sticky=(tk.W, tk.E))
+    descripcion_foto_entry.grid(row=13, column=2, sticky=(tk.W, tk.E))
 
     # Botón para seleccionar imagen
-    ttk.Button(container, text="Seleccionar Imagen", command=select_image).grid(row=10, column=3, sticky=tk.W)
+    ttk.Button(container, text="Seleccionar Imagen", command=select_image).grid(row=12, column=3, sticky=tk.W)
 
-    ttk.Button(container, text="Guardar", command=save_data).grid(row=12, column=2, sticky=tk.E)
-    ttk.Button(container, text="Subir Masivo", command=upload_excel).grid(row=12, column=3, sticky=tk.E)
+    ttk.Button(container, text="Guardar", command=save_data).grid(row=14, column=2, sticky=tk.E)
+    ttk.Button(container, text="Subir Masivo", command=upload_excel).grid(row=14, column=3, sticky=tk.E)
+
