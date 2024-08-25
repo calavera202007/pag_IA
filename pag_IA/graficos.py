@@ -26,13 +26,13 @@ def obtener_datos_desde_db(query):
 
 def mostrar_grafico_crecimiento_plantas(parent, main_content_widgets):
     query = """
-        SELECT d."Semana", d."AF", d."Num_cosecha", l."Ubicacion", tl."TipoLechuga"
-        FROM "Hidroponia"."TBDatos" d
-        JOIN "Hidroponia"."TBLechuga" l ON d."FKIdLechuga" = l."PKIdLechuga"
-        JOIN "Hidroponia"."TBTipoSiembra" ts ON l."FKIdTipSiembra" = ts."PKIdTipSiembra"
-        JOIN "Hidroponia"."TBTipoLechuga" tl ON l."FKIdTipoLechuga" = tl."PKIdTipoLechuga"
-        WHERE ts."Tip_siembra" = 'Agua'
-    """
+                SELECT d."Semana", d."AF", d."Num_cosecha", l."Ubicacion", tl."TipoLechuga"
+                FROM "Hidroponia"."TBDatos" d
+                JOIN "Hidroponia"."TBLechuga" l ON d."FKIdLechuga" = l."PKIdLechuga"
+                JOIN "Hidroponia"."TBTipoSiembra" ts ON l."FKIdTipSiembra" = ts."PKIdTipSiembra"
+                JOIN "Hidroponia"."TBTipoLechuga" tl ON l."FKIdTipoLechuga" = tl."PKIdTipoLechuga"
+                WHERE ts."Tip_siembra" = 'Agua'
+            """
 
     datos = obtener_datos_desde_db(query)
 
@@ -44,21 +44,29 @@ def mostrar_grafico_crecimiento_plantas(parent, main_content_widgets):
     datos['AF'] = pd.to_numeric(datos['AF'], errors='coerce')
     datos = datos.dropna(subset=['AF'])
 
-    plt.figure(figsize=(8, 6))  # Tamaño de la figura ajustado
+    fig, ax = plt.subplots(figsize=(8, 6))  # Tamaño de la figura ajustado
 
+    lines = []
     # Iterar sobre cada combinación de TipoLechuga y Num_cosecha
     for (tipo_lechuga, num_cosecha) in datos[['TipoLechuga', 'Num_cosecha']].drop_duplicates().itertuples(index=False):
         datos_filtro = datos[(datos['TipoLechuga'] == tipo_lechuga) & (datos['Num_cosecha'] == num_cosecha)]
         promedios_semanales = datos_filtro.groupby('Semana')['AF'].mean().reset_index()
-        plt.plot(promedios_semanales['Semana'], promedios_semanales['AF'], label=f'{tipo_lechuga} - Cosecha {num_cosecha}')
+        line, = ax.plot(promedios_semanales['Semana'], promedios_semanales['AF'],
+                        label=f'{tipo_lechuga} - Cosecha {num_cosecha}')
+        lines.append(line)
 
-    plt.xlabel('Semana')
-    plt.ylabel('Crecimiento (AF)')
-    plt.title('Crecimiento de Plantas en Agua por Cosecha y Tipo')
-    plt.legend(loc='best')  # Coloca la leyenda en la mejor posición
-    plt.grid(True)
+    ax.set_xlabel('Semana')
+    ax.set_ylabel('Crecimiento (AF)')
+    ax.set_title('Crecimiento de Plantas en Agua por Cosecha y Tipo')
+    ax.legend(loc='best')  # Coloca la leyenda en la mejor posición
+    ax.grid(True)
 
-    canvas = FigureCanvasTkAgg(plt.gcf(), master=parent)
+    # Agregar tooltips
+    cursor = mplcursors.cursor(lines, hover=True)
+    cursor.connect("add", lambda sel: sel.annotation.set_text(
+        f'Semana: {sel.target[0]:.1f}\nAF: {sel.target[1]:.2f}\n{sel.artist.get_label()}'))
+
+    canvas = FigureCanvasTkAgg(fig, master=parent)
     canvas.draw()
     canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
     main_content_widgets.append(canvas.get_tk_widget())
@@ -83,35 +91,42 @@ def mostrar_grafico_crecimiento_plantas_tierra(parent, main_content_widgets):
     datos['AF'] = pd.to_numeric(datos['AF'], errors='coerce')
     datos = datos.dropna(subset=['AF'])
 
-    plt.figure(figsize=(8, 6))  # Tamaño de la figura ajustado
+    fig, ax = plt.subplots(figsize=(8, 6))  # Tamaño de la figura ajustado
 
+    lines = []
     # Iterar sobre cada combinación de TipoLechuga y Num_cosecha
     for (tipo_lechuga, num_cosecha) in datos[['TipoLechuga', 'Num_cosecha']].drop_duplicates().itertuples(index=False):
         datos_filtro = datos[(datos['TipoLechuga'] == tipo_lechuga) & (datos['Num_cosecha'] == num_cosecha)]
         promedios_semanales = datos_filtro.groupby('Semana')['AF'].mean().reset_index()
-        plt.plot(promedios_semanales['Semana'], promedios_semanales['AF'],
+        line, = ax.plot(promedios_semanales['Semana'], promedios_semanales['AF'],
                  label=f'{tipo_lechuga} - Cosecha {num_cosecha}')
+        lines.append(line)
 
-    plt.xlabel('Semana')
-    plt.ylabel('Crecimiento (AF)')
-    plt.title('Crecimiento de Plantas en Tierra por Cosecha y Tipo')
-    plt.legend(loc='best')  # Coloca la leyenda en la mejor posición
-    plt.grid(True)
+    ax.set_xlabel('Semana')
+    ax.set_ylabel('Crecimiento (AF)')
+    ax.set_title('Crecimiento de Plantas en Tierra por Cosecha y Tipo')
+    ax.legend(loc='best')  # Coloca la leyenda en la mejor posición
+    ax.grid(True)
 
-    canvas = FigureCanvasTkAgg(plt.gcf(), master=parent)
+    # Agregar tooltips
+    cursor = mplcursors.cursor(lines, hover=True)
+    cursor.connect("add", lambda sel: sel.annotation.set_text(
+        f'Semana: {sel.target[0]:.1f}\nAF: {sel.target[1]:.2f}\n{sel.artist.get_label()}'))
+
+    canvas = FigureCanvasTkAgg(fig, master=parent)
     canvas.draw()
     canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
     main_content_widgets.append(canvas.get_tk_widget())
 
 def mostrar_grafico_n_hojas(parent, main_content_widgets):
     query = """
-        SELECT d."Semana", d."NumHojas", d."Num_cosecha", l."Ubicacion", tl."TipoLechuga"
-        FROM "Hidroponia"."TBDatos" d
-        JOIN "Hidroponia"."TBLechuga" l ON d."FKIdLechuga" = l."PKIdLechuga"
-        JOIN "Hidroponia"."TBTipoSiembra" ts ON l."FKIdTipSiembra" = ts."PKIdTipSiembra"
-        JOIN "Hidroponia"."TBTipoLechuga" tl ON l."FKIdTipoLechuga" = tl."PKIdTipoLechuga"
-        WHERE ts."Tip_siembra" = 'Agua'
-    """
+            SELECT d."Semana", d."NumHojas", d."Num_cosecha", l."Ubicacion", tl."TipoLechuga"
+            FROM "Hidroponia"."TBDatos" d
+            JOIN "Hidroponia"."TBLechuga" l ON d."FKIdLechuga" = l."PKIdLechuga"
+            JOIN "Hidroponia"."TBTipoSiembra" ts ON l."FKIdTipSiembra" = ts."PKIdTipSiembra"
+            JOIN "Hidroponia"."TBTipoLechuga" tl ON l."FKIdTipoLechuga" = tl."PKIdTipoLechuga"
+            WHERE ts."Tip_siembra" = 'Agua'
+        """
 
     datos = obtener_datos_desde_db(query)
 
@@ -123,22 +138,29 @@ def mostrar_grafico_n_hojas(parent, main_content_widgets):
     datos['NumHojas'] = pd.to_numeric(datos['NumHojas'], errors='coerce')
     datos = datos.dropna(subset=['NumHojas'])
 
-    plt.figure(figsize=(8, 6))  # Tamaño de la figura ajustado
+    fig, ax = plt.subplots(figsize=(8, 6))  # Tamaño de la figura ajustado
 
+    lines = []
     # Iterar sobre cada combinación de TipoLechuga y Num_cosecha
     for (tipo_lechuga, num_cosecha) in datos[['TipoLechuga', 'Num_cosecha']].drop_duplicates().itertuples(index=False):
         datos_filtro = datos[(datos['TipoLechuga'] == tipo_lechuga) & (datos['Num_cosecha'] == num_cosecha)]
         promedios_semanales = datos_filtro.groupby('Semana')['NumHojas'].mean().reset_index()
-        plt.plot(promedios_semanales['Semana'], promedios_semanales['NumHojas'],
-                 label=f'{tipo_lechuga} - Cosecha {num_cosecha}')
+        line, = ax.plot(promedios_semanales['Semana'], promedios_semanales['NumHojas'],
+                        label=f'{tipo_lechuga} - Cosecha {num_cosecha}')
+        lines.append(line)
 
-    plt.xlabel('Semana')
-    plt.ylabel('Número de Hojas')
-    plt.title('Número de Hojas de Plantas en Agua Semana a Semana')
-    plt.legend(loc='best')  # Coloca la leyenda en la mejor posición
-    plt.grid(True)
+    ax.set_xlabel('Semana')
+    ax.set_ylabel('Número de Hojas')
+    ax.set_title('Número de Hojas de Plantas en Agua Semana a Semana')
+    ax.legend(loc='best')  # Coloca la leyenda en la mejor posición
+    ax.grid(True)
 
-    canvas = FigureCanvasTkAgg(plt.gcf(), master=parent)
+    # Agregar tooltips
+    cursor = mplcursors.cursor(lines, hover=True)
+    cursor.connect("add", lambda sel: sel.annotation.set_text(
+        f'Semana: {sel.target[0]:.1f}\nNúmero de Hojas: {sel.target[1]:.2f}\n{sel.artist.get_label()}'))
+
+    canvas = FigureCanvasTkAgg(fig, master=parent)
     canvas.draw()
     canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
     main_content_widgets.append(canvas.get_tk_widget())
@@ -163,22 +185,29 @@ def mostrar_grafico_n_hojas_tierra(parent, main_content_widgets):
     datos['NumHojas'] = pd.to_numeric(datos['NumHojas'], errors='coerce')
     datos = datos.dropna(subset=['NumHojas'])
 
-    plt.figure(figsize=(8, 6))  # Tamaño de la figura ajustado
+    fig, ax = plt.subplots(figsize=(8, 6))  # Tamaño de la figura ajustado
 
+    lines = []
     # Iterar sobre cada combinación de TipoLechuga y Num_cosecha
     for (tipo_lechuga, num_cosecha) in datos[['TipoLechuga', 'Num_cosecha']].drop_duplicates().itertuples(index=False):
         datos_filtro = datos[(datos['TipoLechuga'] == tipo_lechuga) & (datos['Num_cosecha'] == num_cosecha)]
         promedios_semanales = datos_filtro.groupby('Semana')['NumHojas'].mean().reset_index()
-        plt.plot(promedios_semanales['Semana'], promedios_semanales['NumHojas'],
+        line, = ax.plot(promedios_semanales['Semana'], promedios_semanales['NumHojas'],
                  label=f'{tipo_lechuga} - Cosecha {num_cosecha}')
+        lines.append(line)
 
-    plt.xlabel('Semana')
-    plt.ylabel('Número de Hojas')
-    plt.title('Número de Hojas de Plantas en Tierra Semana a Semana')
-    plt.legend(loc='best')  # Coloca la leyenda en la mejor posición
-    plt.grid(True)
+    ax.set_xlabel('Semana')
+    ax.set_ylabel('Número de Hojas')
+    ax.set_title('Número de Hojas de Plantas en Tierra Semana a Semana')
+    ax.legend(loc='best')  # Coloca la leyenda en la mejor posición
+    ax.grid(True)
 
-    canvas = FigureCanvasTkAgg(plt.gcf(), master=parent)
+    # Agregar tooltips
+    cursor = mplcursors.cursor(lines, hover=True)
+    cursor.connect("add", lambda sel: sel.annotation.set_text(
+        f'Semana: {sel.target[0]:.1f}\nNúmero de Hojas: {sel.target[1]:.2f}\n{sel.artist.get_label()}'))
+
+    canvas = FigureCanvasTkAgg(fig, master=parent)
     canvas.draw()
     canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
     main_content_widgets.append(canvas.get_tk_widget())
