@@ -5,7 +5,6 @@ import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
 from reportlab.lib import colors
-from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet
 import os
 from openpyxl import Workbook
@@ -23,9 +22,9 @@ def main(root):
     cur = conn.cursor()
 
     # Función para obtener los datos de la tabla TBLechuga
-    def get_data(semana=None, num_cosecha=None, ubicacion=None, tipo_lechuga=None, tipo_siembra=None):
+    def get_data(semana=None, num_cosecha=None, ubicacion=None, tipo_lechuga=None, tipo_siembra=None, planta=None):
         query = """
-            SELECT L."PKIdLechuga", S."Tip_siembra", L."Ubicacion", T."TipoLechuga", D."AF", D."H", D."Semana", 
+            SELECT L."PKIdLechuga", S."Tip_siembra", L."Ubicacion", L."Planta", T."TipoLechuga", D."NumHojas", D."AF", D."H", D."Semana", 
             D."Num_cosecha", D."Observaciones", F."Nombre", F."Ruta", F."Descripcion"
             FROM "Hidroponia"."TBLechuga" L
             JOIN "Hidroponia"."TBTipoSiembra" S ON L."FKIdTipSiembra" = S."PKIdTipSiembra"
@@ -38,6 +37,7 @@ def main(root):
               AND (%s IS NULL OR L."Ubicacion" = %s)
               AND (%s IS NULL OR T."TipoLechuga" = %s)
               AND (%s IS NULL OR S."Tip_siembra" = %s)
+              AND (%s IS NULL OR L."Planta" = %s)
         """
 
         params = (
@@ -50,7 +50,9 @@ def main(root):
             None if tipo_lechuga == '' else tipo_lechuga,
             None if tipo_lechuga == '' else tipo_lechuga,
             None if tipo_siembra == '' else tipo_siembra,
-            None if tipo_siembra == '' else tipo_siembra
+            None if tipo_siembra == '' else tipo_siembra,
+            None if planta == '' else planta,
+            None if planta == '' else planta
         )
 
         cur.execute(query, params)
@@ -58,8 +60,8 @@ def main(root):
         return data
 
     # Función para mostrar los datos en la tabla
-    def show_data(semana=None, num_cosecha=None, ubicacion=None, tipo_lechuga=None, tipo_siembra=None):
-        data = get_data(semana, num_cosecha, ubicacion, tipo_lechuga, tipo_siembra)
+    def show_data(semana=None, num_cosecha=None, ubicacion=None, tipo_lechuga=None, tipo_siembra=None, planta=None):
+        data = get_data(semana, num_cosecha, ubicacion, tipo_lechuga, tipo_siembra, planta)
         for row in tabla.get_children():
             tabla.delete(row)
         for record in data:
@@ -118,22 +120,23 @@ def main(root):
             item_selected = tabla.selection()[0]
             lechuga_id = tabla.item(item_selected, "values")[0]
             data = tabla.item(item_selected, "values")
-
+            new_num_h = simpledialog.askstring("Actualizar Registro", "Numero de hojas", parent=root,
+                                            initialvalue=data[5])
             new_af = simpledialog.askstring("Actualizar Registro", "Nueva Área Foliar (cm2):", parent=root,
-                                            initialvalue=data[4])
-            new_h = simpledialog.askstring("Actualizar Registro", "Nueva Altura (cm):", parent=root, initialvalue=data[5])
-            new_semana = simpledialog.askstring("Actualizar Registro", "Nueva Semana:", parent=root, initialvalue=data[6])
+                                            initialvalue=data[6])
+            new_h = simpledialog.askstring("Actualizar Registro", "Nueva Altura (cm):", parent=root, initialvalue=data[7])
+            new_semana = simpledialog.askstring("Actualizar Registro", "Nueva Semana:", parent=root, initialvalue=data[8])
             new_num_cosecha = simpledialog.askstring("Actualizar Registro", "Nuevo Número de Siembra:", parent=root,
-                                                     initialvalue=data[7])
+                                                     initialvalue=data[9])
             new_observaciones = simpledialog.askstring("Actualizar Registro", "Nuevas Observaciones:", parent=root,
-                                                       initialvalue=data[8])
+                                                       initialvalue=data[10])
 
             if new_af and new_h and new_semana and new_num_cosecha and new_observaciones:
                 cur.execute("""
                     UPDATE "Hidroponia"."TBDatos"
-                    SET "AF" = %s, "H" = %s, "Semana" = %s, "Num_cosecha" = %s, "Observaciones" = %s
+                    SET "NumHojas" = %s, "AF" = %s, "H" = %s, "Semana" = %s, "Num_cosecha" = %s, "Observaciones" = %s
                     WHERE "FKIdLechuga" = %s
-                """, (new_af, new_h, new_semana, new_num_cosecha, new_observaciones, lechuga_id))
+                """, (new_num_h,new_af, new_h, new_semana, new_num_cosecha, new_observaciones, lechuga_id))
                 conn.commit()
                 show_data()
             else:
@@ -148,8 +151,9 @@ def main(root):
         ubicacion = filtro_ubicacion.get()
         tipo_lechuga = filtro_tipo_lechuga.get()
         tipo_siembra = filtro_tipo_siembra.get()
+        planta = filtro_planta.get()
 
-        data = get_data(semana, num_cosecha, ubicacion, tipo_lechuga, tipo_siembra)
+        data = get_data(semana, num_cosecha, ubicacion, tipo_lechuga, tipo_siembra, planta)
 
         doc = SimpleDocTemplate("Reporte_Lestoma.pdf", pagesize=letter)
         elements = []
@@ -167,39 +171,40 @@ def main(root):
         elements.append(header_table)
 
         # Crear los datos de la tabla
-        table_data = [["ID", "Tipo de Siembra", "Ubicación", "Tipo de Lechuga", "Área Foliar", "Altura", "Semana",
-                       "Número de Siembra", "Observaciones"]]
+        table_data = [
+            ["ID", "Tipo_Siembra", "Ubicación", "Planta", "Tipo_Lechuga", "Num_H", "Área_Foliar", "Altura", "Semana",
+             "Número de Siembra", "Observaciones"]]
 
         for record in data:
             record = tuple('-' if v is None or v == '' else v for v in record)
-            row = [record[0][:3] + '..'] + list(record[1:8]) + [record[8]]
+            row = [record[0][:3] + '..'] + list(record[1:8]) + [record[8], record[
+                9], record[10]]  # Asegurarse de incluir las columnas "Número de Siembra" y "Observaciones"
             table_data.append(row)
 
         # Crear y ajustar la tabla
-        table = Table(table_data, colWidths=[30, 70, 60, 70, 45, 45, 35, 70, 80])
+        col_widths = [25, 50, 45, 50, 40, 40, 30, 50, 60, 80,
+                      100]  # Aumentar el ancho para "Número de Siembra" y "Observaciones"
+        table = Table(table_data, colWidths=col_widths)
         style = TableStyle([
             ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
             ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
             ('FONTSIZE', (0, 0), (-1, 0), 6),  # Reducir el tamaño de la fuente del encabezado
-            ('FONTSIZE', (0, 1), (-1, -1), 7),  # Reducir el tamaño de la fuente de los datos
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+            ('FONTSIZE', (0, 1), (-1, -1), 6),  # Reducir el tamaño de la fuente de los datos
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 4),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+            ('LEFTPADDING', (0, 0), (-1, -1), 2),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 2),
             ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
             ('WORDWRAP', (0, 0), (-1, -1), 'CJK')  # Habilitar ajuste de texto
         ])
         table.setStyle(style)
 
-        # Ajustar la longitud de las celdas para que el texto se ajuste dentro
-        for row_num, row in enumerate(table_data):
-            for col_num, cell in enumerate(row):
-                table._argW[col_num] = max(table._argW[col_num], len(str(cell)) * 4)  # Ajustar según el contenido
-
         elements.append(table)
         doc.build(elements)
         messagebox.showinfo("Reporte generado", "El reporte en PDF se ha generado exitosamente.")
-
 
     # Nueva función para generar un reporte en Excel
     def generar_reporte_excel():
@@ -209,9 +214,10 @@ def main(root):
         ubicacion = filtro_ubicacion.get()
         tipo_lechuga = filtro_tipo_lechuga.get()
         tipo_siembra = filtro_tipo_siembra.get()
+        planta = filtro_planta.get()
 
         # Obtener los datos filtrados
-        data = get_data(semana, num_cosecha, ubicacion, tipo_lechuga, tipo_siembra)
+        data = get_data(semana, num_cosecha, ubicacion, tipo_lechuga, tipo_siembra, planta)
 
         # Crear un nuevo libro de Excel
         workbook = Workbook()
@@ -219,7 +225,7 @@ def main(root):
         sheet.title = "Reporte Lestoma"
 
         # Definir los encabezados sin las columnas de fotos
-        headers = ["ID", "Tipo de Siembra", "Ubicación", "Tipo de Lechuga", "AF", "H", "Semana", "Nº Siembra",
+        headers = ["ID", "Tipo de Siembra", "Ubicación", "Planta", "Tipo de Lechuga", "Num H", "AF", "H", "Semana", "Nº Siembra",
                    "Observaciones"]
         sheet.append(headers)
 
@@ -265,20 +271,29 @@ def main(root):
     filtro_tipo_siembra = ttk.Entry(frame)
     filtro_tipo_siembra.grid(row=2, column=1, padx=5, pady=5)
 
-    boton_buscar = ttk.Button(frame, text="Buscar", command=lambda: show_data(filtro_semana.get(),
-                                                                              filtro_num_cosecha.get(),
-                                                                              filtro_ubicacion.get(),
-                                                                              filtro_tipo_lechuga.get(),
-                                                                              filtro_tipo_siembra.get()))
-    boton_buscar.grid(row=2, column=2, columnspan=2, padx=5, pady=5)
+    tk.Label(frame, text="Numero planta:").grid(row=2, column=2, padx=5, pady=5)
+    filtro_planta = ttk.Entry(frame)
+    filtro_planta.grid(row=2, column=3, padx=5, pady=5)
 
-    columns = ("ID", "Tipo de Siembra", "Ubicación", "Tipo de Lechuga", "AF", "H", "Semana", "Nº Siembra", "Observaciones", "Foto Nombre", "Foto Ruta", "Foto Descripción")
+    frame_buscar = tk.Frame(root)
+    frame_buscar.pack(pady=10)
+    boton_buscar = ttk.Button(frame_buscar, text="Buscar", command=lambda: show_data(
+        filtro_semana.get(),
+        filtro_num_cosecha.get(),
+        filtro_ubicacion.get(),
+        filtro_tipo_lechuga.get(),
+        filtro_tipo_siembra.get(),
+        filtro_planta.get()
+    ))
+    boton_buscar.pack(pady=10)
+
+    columns = ("ID", "Tipo de Siembra", "Ubicación", "Planta", "Tipo de Lechuga", "Num h", "AF", "H", "Semana", "Nº Siembra", "Observaciones", "Foto Nombre", "Foto Ruta", "Foto Descripción")
     tabla = ttk.Treeview(frame, columns=columns, show="headings", height=10)
     tabla.grid(row=3, column=0, columnspan=4, padx=5, pady=5)
 
     for col in columns:
         tabla.heading(col, text=col)
-        tabla.column(col, minwidth=0, width=100)
+        tabla.column(col, minwidth=0, width=70)
 
     tabla.bind("<Double-1>", ver_detalles)
 
