@@ -160,7 +160,8 @@ class MainApp(tk.Tk):
                 graficos.mostrar_grafico_af_plantas_agua_v1,
                 graficos.mostrar_grafico_af_plantas_agua_v2,
                 graficos.mostrar_grafico_af_plantas_tierra_v1,
-                graficos.mostrar_grafico_af_plantas_tierra_v2
+                graficos.mostrar_grafico_af_plantas_tierra_v2,
+                graficos.mostrar_grafico_regresion_polynomial
             ]
 
             # Iterar sobre las funciones de dos en dos

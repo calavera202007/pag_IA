@@ -4,6 +4,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
 from sqlalchemy import create_engine
 import mplcursors
+import numpy as np
+from sklearn.metrics import r2_score
 from mpldatacursor import datacursor
 def obtener_datos_desde_db(query):
     try:
@@ -422,3 +424,51 @@ def mostrar_grafico_af_plantas_tierra_v2(parent, main_content_widgets):
     canvas2.draw()
     canvas2.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=True)
     main_content_widgets.append(canvas2.get_tk_widget())
+
+##
+def mostrar_grafico_regresion_polynomial(parent, main_content_widgets):
+    # Creación de muestras aleatorias
+    np.random.seed(2)
+    itemPrices = np.random.normal(3.0, 1.0, 1000)
+    purchaseAmount = np.random.normal(50.0, 10.0, 1000) / itemPrices
+
+    # Calcular la curva polinómica de 4to grado
+    x = np.array(itemPrices)
+    y = np.array(purchaseAmount)
+
+    p4 = np.poly1d(np.polyfit(x, y, 4))
+
+    # Crear puntos para la gráfica de la curva
+    xp = np.linspace(0, 7, 100)
+
+    # Crear la figura
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.scatter(x, y)
+    ax.plot(xp, p4(xp), c='r')
+    ax.set_title('Regresión Polinómica de 4to Grado')
+    ax.set_xlabel('Precio del Producto')
+    ax.set_ylabel('Cantidad Comprada')
+
+    # Calcular y mostrar el error cuadrático medio
+    r2 = r2_score(y, p4(x))
+    ax.text(0.05, 0.95, f'$R^2 = {r2:.2f}$', transform=ax.transAxes, fontsize=14, verticalalignment='top')
+
+    # Integrar la gráfica en tkinter
+    canvas = FigureCanvasTkAgg(fig, master=parent)
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+    main_content_widgets.append(canvas.get_tk_widget())
+
+    # Crear un Frame para contener los textos
+    text_frame = tk.Frame(parent, bg="white")
+    text_frame.pack(fill=tk.BOTH, expand=True)
+    main_content_widgets.append(text_frame)
+
+    # Mostrar el polinomio y el error cuadrático en etiquetas de texto
+    polynomial_label = tk.Label(text_frame, text=f"El polinomio que se obtiene es:\n{p4}", bg="white")
+    polynomial_label.pack(side=tk.TOP, pady=10)
+    main_content_widgets.append(polynomial_label)
+
+    r2_label = tk.Label(text_frame, text=f"El error cuadrático del ajuste es:\n{r2}", bg="white")
+    r2_label.pack(side=tk.TOP, pady=10)
+    main_content_widgets.append(r2_label)
