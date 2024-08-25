@@ -7,7 +7,7 @@ from sqlalchemy import create_engine
 import mplcursors
 import numpy as np
 from sklearn.metrics import r2_score
-from mpldatacursor import datacursor
+#####
 def obtener_datos_desde_db(query):
     try:
         # Crear una conexión con SQLAlchemy
@@ -164,7 +164,7 @@ def mostrar_grafico_crecimiento_plantas_tierra(parent, main_content_widgets):
     # Forzar la actualización de la interfaz
     parent.update_idletasks()
 
-#####@@
+
 def mostrar_grafico_n_hojas(parent, main_content_widgets):
     query = """
             SELECT d."Semana", d."NumHojas", d."Num_cosecha", l."Ubicacion", tl."TipoLechuga"
