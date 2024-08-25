@@ -147,17 +147,50 @@ class MainApp(tk.Tk):
         elif self.current_page == "Salir":
             self.quit_app()
 
+    import tkinter as tk
+    from tkinter import ttk
+
+    import tkinter as tk
+    from tkinter import ttk
+
     def mostrar_graficos_modelo_matematico(self, parent):
         try:
-            graficos.mostrar_grafico_crecimiento_plantas(parent, self.main_content_widgets)
-            graficos.mostrar_grafico_crecimiento_plantas_tierra(parent, self.main_content_widgets)
-            graficos.mostrar_grafico_n_hojas(parent, self.main_content_widgets)
-            graficos.mostrar_grafico_n_hojas_tierra(parent, self.main_content_widgets)
-            graficos.mostrar_grafico_af_plantas_agua_v1(parent, self.main_content_widgets)
-            graficos.mostrar_grafico_af_plantas_agua_v2(parent, self.main_content_widgets)
-            graficos.mostrar_grafico_af_plantas_tierra_v1(parent, self.main_content_widgets)
-            graficos.mostrar_grafico_af_plantas_tierra_v2(parent, self.main_content_widgets)
-            #graficos.mostrar_grafico_regresion_polynomial(parent, self.main_content_widgets)
+            # Crear un frame principal para contener todas las filas de gráficos
+            main_frame = ttk.Frame(parent)
+            main_frame.pack(fill=tk.BOTH, expand=True)
+
+            # Lista de funciones de gráficos
+            funciones_graficos = [
+                graficos.mostrar_grafico_crecimiento_plantas,
+                graficos.mostrar_grafico_crecimiento_plantas_tierra,
+                graficos.mostrar_grafico_n_hojas,
+                graficos.mostrar_grafico_n_hojas_tierra,
+                graficos.mostrar_grafico_af_plantas_agua_v1,
+                graficos.mostrar_grafico_af_plantas_agua_v2,
+                graficos.mostrar_grafico_af_plantas_tierra_v1,
+                graficos.mostrar_grafico_af_plantas_tierra_v2
+            ]
+
+            # Iterar sobre las funciones de dos en dos
+            for i in range(0, len(funciones_graficos), 2):
+                # Crear un frame para cada fila de gráficos
+                row_frame = ttk.Frame(main_frame)
+                row_frame.pack(fill=tk.X, expand=True, pady=5)
+
+                # Crear dos columnas en cada fila
+                for j in range(2):
+                    if i + j < len(funciones_graficos):
+                        # Crear un subframe para cada gráfico
+                        graph_frame = ttk.Frame(row_frame, width=650, height=550)
+                        graph_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
+                        graph_frame.pack_propagate(False)  # Evita que el frame se ajuste al contenido
+
+                        # Llamar a la función de gráfico correspondiente
+                        funciones_graficos[i + j](graph_frame, self.main_content_widgets)
+
+            # Agregar el frame principal a los widgets de contenido principal
+            self.main_content_widgets.append(main_frame)
+
         except ValueError as e:
             print(f"Error al mostrar gráficos: {e}")
 
