@@ -7,6 +7,8 @@ from sqlalchemy import create_engine
 import mplcursors
 import numpy as np
 from sklearn.metrics import r2_score
+plt.style.use('dark_background')
+
 #####
 def obtener_datos_desde_db(query):
     try:
