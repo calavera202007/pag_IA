@@ -152,9 +152,12 @@ class MainApp(tk.Tk):
             graficos.mostrar_grafico_crecimiento_plantas(parent, self.main_content_widgets)
             graficos.mostrar_grafico_crecimiento_plantas_tierra(parent, self.main_content_widgets)
             graficos.mostrar_grafico_n_hojas(parent, self.main_content_widgets)
-            graficos.mostrar_grafico_af_plantas_agua(parent, self.main_content_widgets)
-            graficos.mostrar_grafico_af_plantas_tierra(parent, self.main_content_widgets)
-            graficos.mostrar_grafico_regresion_polynomial(parent, self.main_content_widgets)
+            graficos.mostrar_grafico_n_hojas_tierra(parent, self.main_content_widgets)
+            graficos.mostrar_grafico_af_plantas_agua_v1(parent, self.main_content_widgets)
+            graficos.mostrar_grafico_af_plantas_agua_v2(parent, self.main_content_widgets)
+            graficos.mostrar_grafico_af_plantas_tierra_v1(parent, self.main_content_widgets)
+            graficos.mostrar_grafico_af_plantas_tierra_v2(parent, self.main_content_widgets)
+            #graficos.mostrar_grafico_regresion_polynomial(parent, self.main_content_widgets)
         except ValueError as e:
             print(f"Error al mostrar gráficos: {e}")
 
