@@ -18,6 +18,7 @@ class MainApp(tk.Tk):
         super().__init__()
         self.title("Menú Lateral")
         self.geometry("1500x800")
+        self.resizable(False, False)
         self.user_name = user_name  # Guardar el nombre del usuario
 
         font_path = "MaterialIcons-Regular.ttf"

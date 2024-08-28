@@ -2,7 +2,6 @@ from tkinter import *
 from PIL import ImageTk, Image
 import webbrowser
 import graficos
-import webbrowser
 
 class Dashboard2:
     def __init__(self, frame):
@@ -28,6 +27,15 @@ class Dashboard2:
         self.show_graphs(self.bodyFrame1)
         self.load_images()
 
+        # Agregar texto de derechos de autor
+        self.copyright_label = Label(
+            self.frame,
+            text="© Derechos de autor pertenecen al Semillero de Investigación GISTFA, Laboratorio Lestoma",
+            bg=self.colors['bg'],
+            fg=self.colors['fg']
+        )
+        self.copyright_label.place(x=450, y=750)
+
     def get_colors(self, theme):
         if theme == 'dark':
             return {
@@ -52,6 +60,9 @@ class Dashboard2:
         self.frame.config(bg=self.colors['bg'])
         for i in range(1, 5):
             getattr(self, f'bodyFrame{i}').config(bg=self.colors[f'body_frame{i if i == 1 else ""}'])
+
+        # Actualizar color del texto de derechos de autor
+        self.copyright_label.config(bg=self.colors['bg'], fg=self.colors['fg'])
 
     def show_graphs(self, frame):
         # Resize image to match the size of the graph
@@ -88,5 +99,3 @@ def main(root):
     frame = Frame(root)
     frame.pack(fill=BOTH, expand=True)
     app = Dashboard2(frame)
-
-
