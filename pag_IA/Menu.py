@@ -10,8 +10,8 @@ import ver_tabla
 import IA
 import inicio
 import Cuestionario
-import os
-###
+
+#####
 # Definición de la clase MainApp antes de su uso
 class MainApp(tk.Tk):
     def __init__(self, user_name):
@@ -268,6 +268,8 @@ class MainApp(tk.Tk):
         current_date = time.strftime("%d/%m/%Y")
         self.date_time.config(text=f"{current_time}\n{current_date}")
         self.after(1000, self.show_time)
+
+
 
 
 # Función login, después de definir MainApp

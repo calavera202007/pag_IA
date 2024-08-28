@@ -606,33 +606,78 @@ def mostrar_grafico_af_plantas_tierra_v2(parent, main_content_widgets):
     # Agregar el frame principal a main_content_widgets
     main_content_widgets.append(main_frame)
 
-##
+####
 def mostrar_grafico_regresion_polynomial(parent, main_content_widgets):
-    # Creación de muestras aleatorias
-    np.random.seed(2)
-    itemPrices = np.random.normal(3.0, 1.0, 1000)
-    purchaseAmount = np.random.normal(50.0, 10.0, 1000) / itemPrices
+    # Consultar los datos de la base de datos para las variedades V1 y V2
+    query_v1 = """
+        SELECT d."Semana", d."AF"
+        FROM "Hidroponia"."TBDatos" d
+        JOIN "Hidroponia"."TBLechuga" l ON d."FKIdLechuga" = l."PKIdLechuga"
+        JOIN "Hidroponia"."TBTipoSiembra" ts ON l."FKIdTipSiembra" = ts."PKIdTipSiembra"
+        JOIN "Hidroponia"."TBTipoLechuga" tl ON l."FKIdTipoLechuga" = tl."PKIdTipoLechuga"
+        WHERE ts."Tip_siembra" = 'Tierra' AND tl."TipoLechuga" = 'V1'
+    """
+    query_v2 = """
+        SELECT d."Semana", d."AF"
+        FROM "Hidroponia"."TBDatos" d
+        JOIN "Hidroponia"."TBLechuga" l ON d."FKIdLechuga" = l."PKIdLechuga"
+        JOIN "Hidroponia"."TBTipoSiembra" ts ON l."FKIdTipSiembra" = ts."PKIdTipSiembra"
+        JOIN "Hidroponia"."TBTipoLechuga" tl ON l."FKIdTipoLechuga" = tl."PKIdTipoLechuga"
+        WHERE ts."Tip_siembra" = 'Tierra' AND tl."TipoLechuga" = 'V2'
+    """
 
-    # Calcular la curva polinómica de 4to grado
-    x = np.array(itemPrices)
-    y = np.array(purchaseAmount)
+    datos_v1 = obtener_datos_desde_db(query_v1)
+    datos_v2 = obtener_datos_desde_db(query_v2)
 
-    p4 = np.poly1d(np.polyfit(x, y, 4))
+    if datos_v1 is None or datos_v1.empty or datos_v2 is None or datos_v2.empty:
+        print("No se obtuvieron datos.")
+        return
+
+    # Filtrar y preparar los datos
+    datos_v1['Semana'] = pd.to_numeric(datos_v1['Semana'], errors='coerce')
+    datos_v1['AF'] = pd.to_numeric(datos_v1['AF'], errors='coerce')
+    datos_v1 = datos_v1.dropna(subset=['AF'])
+
+    datos_v2['Semana'] = pd.to_numeric(datos_v2['Semana'], errors='coerce')
+    datos_v2['AF'] = pd.to_numeric(datos_v2['AF'], errors='coerce')
+    datos_v2 = datos_v2.dropna(subset=['AF'])
+
+    # Calcular la curva polinómica de 4to grado para V1 y V2
+    x_v1 = datos_v1['Semana']
+    y_v1 = datos_v1['AF']
+    x_v2 = datos_v2['Semana']
+    y_v2 = datos_v2['AF']
+
+    p4_v1 = np.poly1d(np.polyfit(x_v1, y_v1, 4))
+    p4_v2 = np.poly1d(np.polyfit(x_v2, y_v2, 4))
 
     # Crear puntos para la gráfica de la curva
-    xp = np.linspace(0, 7, 100)
+    xp_v1 = np.linspace(min(x_v1), max(x_v1), 100)
+    xp_v2 = np.linspace(min(x_v2), max(x_v2), 100)
 
-    # Crear la figura
+    # Crear la figura con tamaño de 6x4 pulgadas
     fig, ax = plt.subplots(figsize=(6, 6))
-    ax.scatter(x, y)
-    ax.plot(xp, p4(xp), c='r')
-    ax.set_title('Regresión Polinómica de 4to Grado')
-    ax.set_xlabel('Precio del Producto')
-    ax.set_ylabel('Cantidad Comprada')
 
-    # Calcular y mostrar el error cuadrático medio
-    r2 = r2_score(y, p4(x))
-    ax.text(0.05, 0.95, f'$R^2 = {r2:.2f}$', transform=ax.transAxes, fontsize=14, verticalalignment='top')
+    # Graficar los datos y las regresiones polinómicas
+    ax.scatter(x_v1, y_v1, label="Datos V1", color='red')
+    ax.plot(xp_v1, p4_v1(xp_v1), c='red', label="Regresión Polinómica V1 (Grado 4)")
+
+    ax.scatter(x_v2, y_v2, label="Datos V2", color='yellow')
+    ax.plot(xp_v2, p4_v2(xp_v2), c='yellow', label="Regresión Polinómica V2 (Grado 4)")
+
+    ax.set_title('Regresión Polinómica de 4to Grado (V1 y V2)')
+    ax.set_xlabel('Semana')
+    ax.set_ylabel('Área Foliar (AF)')
+    ax.legend(loc='best')
+    ax.grid(True)
+
+    # Calcular y mostrar el R^2 para ambas regresiones
+    r2_v1 = np.round(r2_score(y_v1, p4_v1(x_v1)), 2)
+    r2_v2 = np.round(r2_score(y_v2, p4_v2(x_v2)), 2)
+    ax.text(0.05, 0.95, f'$R^2_{{V1}} = {r2_v1:.2f}$', transform=ax.transAxes, fontsize=12, verticalalignment='top',
+            color='blue')
+    ax.text(0.05, 0.90, f'$R^2_{{V2}} = {r2_v2:.2f}$', transform=ax.transAxes, fontsize=12, verticalalignment='top',
+            color='green')
 
     # Integrar la gráfica en tkinter
     canvas = FigureCanvasTkAgg(fig, master=parent)
@@ -645,11 +690,21 @@ def mostrar_grafico_regresion_polynomial(parent, main_content_widgets):
     text_frame.pack(fill=tk.BOTH, expand=True)
     main_content_widgets.append(text_frame)
 
-    # Mostrar el polinomio y el error cuadrático en etiquetas de texto
-    polynomial_label = tk.Label(text_frame, text=f"El polinomio que se obtiene es:\n{p4}", bg="white")
-    polynomial_label.pack(side=tk.TOP, pady=10)
-    main_content_widgets.append(polynomial_label)
+    # Mostrar los polinomios y los errores cuadráticos en etiquetas de texto
+    polynomial_label_v1 = tk.Label(text_frame, text=f"Polinomio V1:\n{p4_v1}", bg="white")
+    polynomial_label_v1.pack(side=tk.TOP, pady=10)
+    main_content_widgets.append(polynomial_label_v1)
 
-    r2_label = tk.Label(text_frame, text=f"El error cuadrático del ajuste es:\n{r2}", bg="white")
-    r2_label.pack(side=tk.TOP, pady=10)
-    main_content_widgets.append(r2_label)
+    r2_label_v1 = tk.Label(text_frame, text=f"Error cuadrático V1:\n{r2_v1}", bg="white")
+    r2_label_v1.pack(side=tk.TOP, pady=10)
+    main_content_widgets.append(r2_label_v1)
+
+    polynomial_label_v2 = tk.Label(text_frame, text=f"Polinomio V2:\n{p4_v2}", bg="white")
+    polynomial_label_v2.pack(side=tk.TOP, pady=10)
+    main_content_widgets.append(polynomial_label_v2)
+
+    r2_label_v2 = tk.Label(text_frame, text=f"Error cuadrático V2:\n{r2_v2}", bg="white")
+    r2_label_v2.pack(side=tk.TOP, pady=10)
+    main_content_widgets.append(r2_label_v2)
+
+
