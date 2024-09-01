@@ -16,13 +16,13 @@ class Dashboard2:
     def init_ui(self):
         # Creación de los marcos con el color de fondo apropiado
         self.bodyFrame1 = Frame(self.frame, bg=self.colors['body_frame'])
-        self.bodyFrame1.place(x=20, y=20, width=1300, height=350)
+        self.bodyFrame1.place(x=20, y=20, width=1100, height=350)
         self.bodyFrame2 = Frame(self.frame, bg=self.colors['body_frame2'])
-        self.bodyFrame2.place(x=200, y=380, width=310, height=220)
+        self.bodyFrame2.place(x=90, y=380, width=310, height=220)
         self.bodyFrame3 = Frame(self.frame, bg=self.colors['body_frame3'])
-        self.bodyFrame3.place(x=520, y=380, width=310, height=220)
+        self.bodyFrame3.place(x=400, y=380, width=310, height=220)
         self.bodyFrame4 = Frame(self.frame, bg=self.colors['body_frame4'])
-        self.bodyFrame4.place(x=840, y=380, width=310, height=220)
+        self.bodyFrame4.place(x=720, y=380, width=310, height=220)
 
         self.show_graphs(self.bodyFrame1)
         self.load_images()
@@ -34,7 +34,7 @@ class Dashboard2:
             bg=self.colors['bg'],
             fg=self.colors['fg']
         )
-        self.copyright_label.place(x=450, y=750)
+        self.copyright_label.place(x=320, y=610)
 
     def get_colors(self, theme):
         if theme == 'dark':
@@ -67,7 +67,7 @@ class Dashboard2:
     def show_graphs(self, frame):
         # Resize image to match the size of the graph
         image = Image.open('images/blender.jpeg')
-        image = image.resize((600, 400), Image.Resampling.LANCZOS)  # Adjust the size as needed
+        image = image.resize((500, 300), Image.Resampling.LANCZOS)  # Ajustar tamaño a más pequeño
         photo = ImageTk.PhotoImage(image)
         image_label = Label(frame, image=photo, borderwidth=0)
         image_label.image = photo  # keep a reference!
@@ -82,7 +82,7 @@ class Dashboard2:
         for i, img_name in enumerate(["train.jpg", "repositorio.jpg", "result.jpg"]):
             img_path = f'images/{img_name}'
             img = Image.open(img_path)
-            img = img.resize((300, 200), Image.Resampling.LANCZOS)  # Ajusta el tamaño según sea necesario
+            img = img.resize((300, 200), Image.Resampling.LANCZOS)  # Ajusta el tamaño a más pequeño
             photo = ImageTk.PhotoImage(img)
             img_label = Label(getattr(self, f'bodyFrame{i + 2}'), image=photo, borderwidth=0)
             img_label.image = photo

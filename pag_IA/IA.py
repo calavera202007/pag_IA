@@ -293,7 +293,7 @@ Manejo integrado:
     cargar_fotos()
 
     # Botón para analizar la imagen
-    analizar_boton = tk.Button(selection_frame, text="Analizar Imagen", command=analizar_imagen)
+    analizar_boton = tk.Button(selection_frame, text="Analizar Imagen", command=analizar_imagen, pady=10)
     analizar_boton.pack(pady=10)
 
     # Etiqueta para mostrar la imagen

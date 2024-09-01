@@ -11,13 +11,14 @@ import IA
 import inicio
 import Cuestionario
 
-#####
+
+####
 # Definición de la clase MainApp antes de su uso
 class MainApp(tk.Tk):
     def __init__(self, user_name):
         super().__init__()
         self.title("Menú Lateral")
-        self.geometry("1500x800")
+        self.geometry("1350x650")
         self.resizable(False, False)
         self.user_name = user_name  # Guardar el nombre del usuario
 
@@ -57,7 +58,8 @@ class MainApp(tk.Tk):
             'text': '#fff' if self.dark_mode else '#000',
             'bg': '#222' if self.dark_mode else '#fff',
             'fg': '#fff' if self.dark_mode else '#000',
-            'icon': 'white' if self.dark_mode else 'black'
+            'icon': 'white' if self.dark_mode else 'black',
+            'icon_hover': 'grey'
         }
 
     def configure_styles(self):
@@ -68,10 +70,11 @@ class MainApp(tk.Tk):
                        relief=[("pressed", "sunken")],
                        borderwidth=[("pressed", 2)])
 
-    def create_icon_image(self, icon_char):
+    def create_icon_image(self, icon_char, color=None):
         image = Image.new("RGBA", (25, 25), (0, 0, 0, 0))
         draw = ImageDraw.Draw(image)
-        draw.text((5, 5), icon_char, font=self.material_icons, fill=self.colors['icon'])
+        icon_color = color if color else self.colors['icon']
+        draw.text((5, 5), icon_char, font=self.material_icons, fill=icon_color)
         return ImageTk.PhotoImage(image)
 
     def create_sidebar_content(self):
@@ -82,7 +85,6 @@ class MainApp(tk.Tk):
         self.logo = tk.Label(self.sidebar, image=self.logoImage, bg=self.colors['sidebar'])
         self.logo.pack(pady=(8, 8), anchor='center')
 
-        # Mostrar el nombre del usuario en lugar de "Lestoma"
         self.brandName = tk.Label(self.sidebar, text=self.user_name, bg=self.colors['sidebar'], font=("", 15, "bold"),
                                   fg=self.colors['text'])
         self.brandName.pack(pady=(0, 15), anchor='center')
@@ -103,11 +105,24 @@ class MainApp(tk.Tk):
                                command=lambda p=page: self.on_button_click(p))
             button.image = icon_image
             button.pack(pady=3, anchor='center')
+            button.bind("<Enter>", lambda event, ic=icon_char, b=button: self.on_hover(event, ic, b))
+            button.bind("<Leave>", lambda event, ic=icon_char, b=button: self.on_leave(event, ic, b))
+
             label = tk.Label(self.sidebar, text=text, bg=self.colors['sidebar'], font=("", 13, "bold"),
                              fg=self.colors['text'])
             label.pack(pady=(0, 15), anchor='center')
             setattr(self, f"{page.lower().replace(' ', '_')}_button", button)
             setattr(self, f"{page.lower().replace(' ', '_')}_label", label)
+
+    def on_hover(self, event, icon_char, button):
+        icon_image = self.create_icon_image(icon_char, color=self.colors['icon_hover'])
+        button.config(image=icon_image)
+        button.image = icon_image
+
+    def on_leave(self, event, icon_char, button):
+        icon_image = self.create_icon_image(icon_char)
+        button.config(image=icon_image)
+        button.image = icon_image
 
     def create_main_content(self):
         for widget in self.main_content_widgets:
@@ -148,11 +163,9 @@ class MainApp(tk.Tk):
 
     def mostrar_graficos_modelo_matematico(self, parent):
         try:
-            # Crear un frame principal para contener todas las filas de gráficos
             main_frame = ttk.Frame(parent)
             main_frame.pack(fill=tk.BOTH, expand=True)
 
-            # Lista de funciones de gráficos
             funciones_graficos = [
                 graficos.mostrar_grafico_crecimiento_plantas,
                 graficos.mostrar_grafico_crecimiento_plantas_tierra,
@@ -165,24 +178,18 @@ class MainApp(tk.Tk):
                 graficos.mostrar_grafico_regresion_polynomial
             ]
 
-            # Iterar sobre las funciones de dos en dos
             for i in range(0, len(funciones_graficos), 2):
-                # Crear un frame para cada fila de gráficos
                 row_frame = ttk.Frame(main_frame)
                 row_frame.pack(fill=tk.X, expand=True, pady=5)
 
-                # Crear dos columnas en cada fila
                 for j in range(2):
                     if i + j < len(funciones_graficos):
-                        # Crear un subframe para cada gráfico
-                        graph_frame = ttk.Frame(row_frame, width=650, height=550)
-                        graph_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
-                        graph_frame.pack_propagate(False)  # Evita que el frame se ajuste al contenido
+                        graph_frame = ttk.Frame(row_frame, width=570, height=470)
+                        graph_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=4)
+                        graph_frame.pack_propagate(False)
 
-                        # Llamar a la función de gráfico correspondiente
                         funciones_graficos[i + j](graph_frame, self.main_content_widgets)
 
-            # Agregar el frame principal a los widgets de contenido principal
             self.main_content_widgets.append(main_frame)
 
         except ValueError as e:
@@ -191,7 +198,7 @@ class MainApp(tk.Tk):
     def on_button_click(self, page_name):
         self.current_page = page_name
         if page_name == "Salir":
-            self.confirm_exit()  # Solo llama a confirm_exit si la página es "Salir"
+            self.confirm_exit()
         else:
             self.create_main_content()
 
@@ -200,7 +207,6 @@ class MainApp(tk.Tk):
         if response:
             self.quit_app()
         else:
-            # Redirigir a la página de inicio
             self.current_page = "Inicio"
             self.create_main_content()
 
@@ -260,7 +266,7 @@ class MainApp(tk.Tk):
 
     def quit_app(self):
         try:
-            self.destroy()  # Usa 'self.destroy()' para cerrar la ventana principal
+            self.destroy()
         except tk.TclError:
             pass
 
@@ -271,18 +277,16 @@ class MainApp(tk.Tk):
         self.after(1000, self.show_time)
 
 
-
-
 # Función login, después de definir MainApp
 def is_valid_email(email):
     pattern = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
     return re.match(pattern, email) is not None
 
-# Función para validar el tiempo entre teclas
+
 def is_robot_detected(entry):
     return time.time() - entry.last_modified < 0.5
 
-# Función para conectar y verificar credenciales
+
 def verify_credentials(username, password):
     try:
         conn = psycopg2.connect(
@@ -314,7 +318,6 @@ def verify_credentials(username, password):
         return None
 
 
-# Función para validar las credenciales y el captcha
 def login():
     username = entry_username.get()
     password = entry_password.get()
@@ -342,17 +345,16 @@ def login():
             app.mainloop()
 
 
-
-# Función para actualizar el tiempo de modificación
 def on_entry_change(event, entry):
     entry.last_modified = time.time()
 
-# Función para mostrar u ocultar la contraseña
+
 def toggle_password_visibility():
     if show_password_var.get():
         entry_password.config(show="")
     else:
         entry_password.config(show="*")
+
 
 # Configuración de la ventana principal
 root = tk.Tk()
@@ -360,48 +362,41 @@ root.title("Login")
 root.geometry("600x400")
 root.resizable(False, False)
 
-# Configuración del fondo
-background_image = tk.PhotoImage(file="fondo.png")  # Reemplaza "fondo.png" con la ruta de tu imagen de fondo
+background_image = tk.PhotoImage(file="fondo.png")
 background_label = tk.Label(root, image=background_image)
 background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
-# Configuración del frame de login
 login_frame = tk.Frame(root, bg="#FFFFFF", bd=2, relief="groove")
 login_frame.place(x=150, y=100, width=300, height=260)
 
-# Título del login
 title_label = tk.Label(login_frame, text="Iniciar Sesión", font=("Arial", 14, "bold"), bg="#FFFFFF")
 title_label.grid(row=0, column=0, columnspan=2, pady=10)
 
-# Campo de nombre de usuario
 username_label = tk.Label(login_frame, text="Correo electrónico:", font=("Arial", 10), bg="#FFFFFF")
 username_label.grid(row=1, column=0, pady=5)
 entry_username = tk.Entry(login_frame, font=("Arial", 10))
 entry_username.grid(row=1, column=1, pady=5)
-entry_username.last_modified = time.time()  # Inicializar el tiempo de modificación
+entry_username.last_modified = time.time()
 entry_username.bind("<KeyRelease>", lambda event: on_entry_change(event, entry_username))
 
-# Campo de contraseña
 password_label = tk.Label(login_frame, text="Contraseña:", font=("Arial", 10), bg="#FFFFFF")
 password_label.grid(row=2, column=0, pady=5)
 entry_password = tk.Entry(login_frame, font=("Arial", 10), show="*")
 entry_password.grid(row=2, column=1, pady=5)
-entry_password.last_modified = time.time()  # Inicializar el tiempo de modificación
+entry_password.last_modified = time.time()
 entry_password.bind("<KeyRelease>", lambda event: on_entry_change(event, entry_password))
 
-# Casilla de verificación para mostrar/ocultar la contraseña
 show_password_var = tk.BooleanVar()
-show_password_check = tk.Checkbutton(login_frame, text="Mostrar contraseña", variable=show_password_var, bg="#FFFFFF", command=toggle_password_visibility)
+show_password_check = tk.Checkbutton(login_frame, text="Mostrar contraseña", variable=show_password_var, bg="#FFFFFF",
+                                     command=toggle_password_visibility)
 show_password_check.grid(row=3, column=0, columnspan=2, pady=5)
 
-# Casilla de verificación "No soy un robot"
 var_no_robot = tk.BooleanVar()
 check_no_robot = tk.Checkbutton(login_frame, text="No soy un robot", variable=var_no_robot, bg="#FFFFFF")
 check_no_robot.grid(row=4, column=0, columnspan=2, pady=5)
 
-# Botón de inicio de sesión
-login_button = tk.Button(login_frame, text="Iniciar Sesión", font=("Arial", 10), bg="#4CAF50", fg="#FFFFFF", command=login)
+login_button = tk.Button(login_frame, text="Iniciar Sesión", font=("Arial", 10), bg="#4CAF50", fg="#FFFFFF",
+                         command=login)
 login_button.grid(row=5, column=0, columnspan=2, pady=10)
 
-# Iniciar el loop principal
 root.mainloop()
