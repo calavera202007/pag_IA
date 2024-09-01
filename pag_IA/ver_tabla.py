@@ -6,6 +6,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Image
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
+from tkinter import Button
 import os
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
@@ -277,7 +278,7 @@ def main(root):
 
     frame_buscar = tk.Frame(root)
     frame_buscar.pack(pady=10)
-    boton_buscar = ttk.Button(frame_buscar, text="Buscar", command=lambda: show_data(
+    boton_buscar = Button(frame_buscar, text="Buscar", width=20, height=2, command=lambda: show_data(
         filtro_semana.get(),
         filtro_num_cosecha.get(),
         filtro_ubicacion.get(),
@@ -287,29 +288,35 @@ def main(root):
     ))
     boton_buscar.pack(pady=10)
 
-    columns = ("ID", "Tipo de Siembra", "Ubicación", "Planta", "Tipo de Lechuga", "Num h", "AF", "H", "Semana", "Nº Siembra", "Observaciones", "Foto Nombre", "Foto Ruta", "Foto Descripción")
-    tabla = ttk.Treeview(frame, columns=columns, show="headings", height=10)
+    # Definir el Treeview para mostrar la tabla
+    columns = (
+    "ID", "Tipo de Siembra", "Ubicación", "Planta", "Tipo de Lechuga", "Num h", "AF", "H", "Semana", "Nº Siembra",
+    "Observaciones", "Foto Nombre", "Foto Ruta", "Foto Descripción")
+    tabla = ttk.Treeview(frame, columns=columns, show="headings", height=15)  # Aumentar la altura a 15 filas
     tabla.grid(row=3, column=0, columnspan=4, padx=5, pady=5)
 
+    # Ajustar el ancho de cada columna
     for col in columns:
         tabla.heading(col, text=col)
-        tabla.column(col, minwidth=0, width=70)
+        tabla.column(col, minwidth=0, width=80)  # Aumentar el ancho a 100 píxeles
 
     tabla.bind("<Double-1>", ver_detalles)
 
     frame_botones = tk.Frame(root)
     frame_botones.pack(padx=10, pady=10)
 
-    boton_eliminar = ttk.Button(frame_botones, text="Eliminar", command=eliminar_registro)
+    # Crear botones con tamaño personalizado
+    boton_eliminar = Button(frame_botones, text="Eliminar", command=eliminar_registro, width=20, height=2)
     boton_eliminar.grid(row=0, column=0, padx=5, pady=5)
 
-    boton_actualizar = ttk.Button(frame_botones, text="Actualizar", command=actualizar_registro)
+    boton_actualizar = Button(frame_botones, text="Actualizar", command=actualizar_registro, width=20, height=2)
     boton_actualizar.grid(row=0, column=1, padx=5, pady=5)
 
-    boton_reporte = ttk.Button(frame_botones, text="Generar Reporte PDF", command=generar_reporte)
+    boton_reporte = Button(frame_botones, text="Generar Reporte PDF", command=generar_reporte, width=25, height=2)
     boton_reporte.grid(row=0, column=2, padx=5, pady=5)
 
-    boton_reporte_excel = ttk.Button(frame_botones, text="Generar Reporte Excel", command=generar_reporte_excel)
+    boton_reporte_excel = Button(frame_botones, text="Generar Reporte Excel", command=generar_reporte_excel, width=25,
+                                 height=2)
     boton_reporte_excel.grid(row=0, column=3, padx=5, pady=5)
 
     show_data()
