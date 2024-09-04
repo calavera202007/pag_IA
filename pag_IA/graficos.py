@@ -9,7 +9,7 @@ import numpy as np
 from sklearn.metrics import r2_score
 
 
-#####
+###
 def obtener_datos_desde_db(query):
     try:
         # Crear una conexión con SQLAlchemy

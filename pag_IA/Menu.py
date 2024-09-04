@@ -166,30 +166,72 @@ class MainApp(tk.Tk):
             main_frame = ttk.Frame(parent)
             main_frame.pack(fill=tk.BOTH, expand=True)
 
-            funciones_graficos = [
-                graficos.mostrar_grafico_crecimiento_plantas,
-                graficos.mostrar_grafico_crecimiento_plantas_tierra,
-                graficos.mostrar_grafico_n_hojas,
-                graficos.mostrar_grafico_n_hojas_tierra,
-                graficos.mostrar_grafico_af_plantas_agua_v1,
-                graficos.mostrar_grafico_af_plantas_agua_v2,
-                graficos.mostrar_grafico_af_plantas_tierra_v1,
-                graficos.mostrar_grafico_af_plantas_tierra_v2,
-                graficos.mostrar_grafico_regresion_polynomial
-            ]
+            # Opciones del menú desplegable y sus funciones correspondientes
+            opciones_menu = {
+                "Crecimiento": [
+                    graficos.mostrar_grafico_crecimiento_plantas,
+                    graficos.mostrar_grafico_crecimiento_plantas_tierra
+                ],
+                "N. Hojas": [
+                    graficos.mostrar_grafico_n_hojas,
+                    graficos.mostrar_grafico_n_hojas_tierra
+                ],
+                "Área Foliar Tierra": [
+                    graficos.mostrar_grafico_af_plantas_agua_v1,
+                    graficos.mostrar_grafico_af_plantas_agua_v2
+                ],
+                "Área Foliar Agua": [
+                    graficos.mostrar_grafico_af_plantas_tierra_v1,
+                    graficos.mostrar_grafico_af_plantas_tierra_v2
+                ],
+                "Regresión Polynomial": [
+                    graficos.mostrar_grafico_regresion_polynomial
+                ],
+                "Todos": [
+                    graficos.mostrar_grafico_crecimiento_plantas,
+                    graficos.mostrar_grafico_crecimiento_plantas_tierra,
+                    graficos.mostrar_grafico_n_hojas,
+                    graficos.mostrar_grafico_n_hojas_tierra,
+                    graficos.mostrar_grafico_af_plantas_agua_v1,
+                    graficos.mostrar_grafico_af_plantas_agua_v2,
+                    graficos.mostrar_grafico_af_plantas_tierra_v1,
+                    graficos.mostrar_grafico_af_plantas_tierra_v2,
+                    graficos.mostrar_grafico_regresion_polynomial
+                ]
+            }
 
-            for i in range(0, len(funciones_graficos), 2):
-                row_frame = ttk.Frame(main_frame)
-                row_frame.pack(fill=tk.X, expand=True, pady=5)
+            # Crear un menú desplegable
+            selected_option = tk.StringVar(value="Seleccionar")
+            dropdown = ttk.OptionMenu(main_frame, selected_option, "Seleccionar", *opciones_menu.keys())
+            dropdown.pack(pady=10)
 
-                for j in range(2):
-                    if i + j < len(funciones_graficos):
-                        graph_frame = ttk.Frame(row_frame, width=570, height=470)
-                        graph_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=4)
-                        graph_frame.pack_propagate(False)
+            # Función para actualizar los gráficos mostrados según la selección del menú desplegable
+            def actualizar_graficos(*args):
+                # Limpiar gráficos actuales
+                for widget in main_frame.winfo_children():
+                    if isinstance(widget, ttk.Frame) and widget is not dropdown:
+                        widget.destroy()
 
-                        funciones_graficos[i + j](graph_frame, self.main_content_widgets)
+                # Obtener las funciones de gráficos correspondientes a la opción seleccionada
+                funciones_graficos = opciones_menu.get(selected_option.get(), [])
 
+                # Mostrar las gráficas en una cuadrícula de dos por fila
+                for i in range(0, len(funciones_graficos), 2):
+                    row_frame = ttk.Frame(main_frame)
+                    row_frame.pack(fill=tk.X, expand=True, pady=5)
+
+                    for j in range(2):
+                        if i + j < len(funciones_graficos):
+                            graph_frame = ttk.Frame(row_frame, width=570, height=470)
+                            graph_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=4)
+                            graph_frame.pack_propagate(False)
+
+                            funciones_graficos[i + j](graph_frame, self.main_content_widgets)
+
+            # Llamar a la función para actualizar gráficos al cambiar la selección del menú desplegable
+            selected_option.trace_add("write", actualizar_graficos)
+
+            # Agregar el marco principal a los widgets de contenido principal
             self.main_content_widgets.append(main_frame)
 
         except ValueError as e:
