@@ -431,7 +431,7 @@ root.title("Login")
 root.geometry("600x400")
 root.resizable(False, False)
 
-background_image = tk.PhotoImage(file="fondo.png")
+background_image = tk.PhotoImage(file="images/fondo.png")
 background_label = tk.Label(root, image=background_image)
 background_label.place(x=0, y=0, relwidth=1, relheight=1)
 
