@@ -16,12 +16,13 @@ import matplotlib.pyplot as plt
 #######
 # Definición de la clase MainApp antes de su uso
 class MainApp(tk.Tk):
-    def __init__(self, user_name):
+    def __init__(self, user_name, user_role):
         super().__init__()
         self.title("Menú Lateral")
         self.geometry("1350x650")
         self.resizable(False, False)
-        self.user_name = user_name  # Guardar el nombre del usuario
+        self.user_name = user_name
+        self.user_role = user_role  # Guardar el rol del usuario
 
         font_path = "MaterialIcons-Regular.ttf"
         self.material_icons = ImageFont.truetype(font_path, 18)
@@ -90,14 +91,18 @@ class MainApp(tk.Tk):
                                   fg=self.colors['text'])
         self.brandName.pack(pady=(0, 15), anchor='center')
 
+        # Definir los botones del menú lateral
         buttons = [
             ("Dashboard", "\ue871", "Inicio"),
             ("Modelo matemático", "\ue8b8", "Modelo matemático"),
             ("IA", "\ue8b6", "IA"),
             ("Reportes", "\ue8b3", "Reportes"),
-            ("Cuestionario", "\ue8f4", "Cuestionario"),
             ("Salir", "\ue879", "Salir")
         ]
+
+        # Añadir el botón "Cuestionario" solo si el rol del usuario es "Super Administrador"
+        if self.user_role == "Super Administrador":
+            buttons.insert(-1, ("Cuestionario", "\ue8f4", "Cuestionario"))
 
         for text, icon_char, page in buttons:
             icon_image = self.create_icon_image(icon_char)
@@ -124,7 +129,7 @@ class MainApp(tk.Tk):
         icon_image = self.create_icon_image(icon_char)
         button.config(image=icon_image)
         button.image = icon_image
-
+##
     def create_main_content(self):
         for widget in self.main_content_widgets:
             widget.destroy()
@@ -158,7 +163,7 @@ class MainApp(tk.Tk):
         elif self.current_page == "IA":
             IA.main(frame)
         elif self.current_page == "Reportes":
-            ver_tabla.main(frame)
+            ver_tabla.main(frame, self.user_role)  # Pasa el rol del usuario a ver_tabla
         elif self.current_page == "Cuestionario":
             Cuestionario.main(frame)
 
@@ -302,9 +307,13 @@ class MainApp(tk.Tk):
 
         for _, icon_char, page in buttons:
             icon_image = self.create_icon_image(icon_char)
-            button = getattr(self, f"{page.lower().replace(' ', '_')}_button")
-            button.config(image=icon_image)
-            button.image = icon_image
+
+            # Verificar si el botón existe antes de intentar actualizar su ícono
+            button_name = f"{page.lower().replace(' ', '_')}_button"
+            if hasattr(self, button_name):
+                button = getattr(self, button_name)
+                button.config(image=icon_image)
+                button.image = icon_image
 
     def toggle_dark_mode(self, event=None):
         self.dark_mode = not self.dark_mode
@@ -353,23 +362,26 @@ def verify_credentials(username, password):
         cursor = conn.cursor()
         encoded_password = hashlib.sha512(password.encode()).hexdigest()
 
+        # Asegúrate de que el nombre de la columna coincida con el de tu base de datos
         cursor.execute("""
-            SELECT "UsrNombre" 
-            FROM "Super Administrador"."Usuario" 
-            WHERE "UsrCorreo" = %s AND "UsrContrasenna" = %s
+            SELECT u."UsrNombre", r."RolNombre"
+            FROM "Super Administrador"."Usuario" u
+            JOIN "Super Administrador"."Rol" r ON u."UsrIdRol" = r."RolId"
+            WHERE u."UsrCorreo" = %s AND u."UsrContrasenna" = %s
         """, (username, encoded_password))
 
         result = cursor.fetchone()
         conn.close()
 
         if result:
-            return result[0]  # Retornar el nombre del usuario
+            return result[0], result[1]  # Retornar el nombre del usuario y el nombre del rol
         else:
             return None
 
     except (Exception, psycopg2.Error) as error:
         messagebox.showerror("Error", f"Error al conectarse a la base de datos: {error}")
         return None
+
 
 
 def login():
@@ -389,14 +401,17 @@ def login():
     elif not is_valid_email(username):
         messagebox.showerror("Error", "Por favor, ingrese una dirección de correo válida.")
     else:
-        user_name = verify_credentials(username, password)
-        if user_name is None:
+        user_info = verify_credentials(username, password)
+        if user_info is None:
             messagebox.showerror("Error", "Nombre de usuario o contraseña incorrectos.")
         else:
-            messagebox.showinfo("Éxito", "Inicio de sesión exitoso.")
+            user_name, user_role = user_info  # Obtener el nombre del usuario y el rol
+            messagebox.showinfo("Éxito", f"Inicio de sesión exitoso. Rol: {user_role}")
             root.destroy()  # Cerrar la ventana de inicio de sesión
-            app = MainApp(user_name)  # Pasar el nombre de usuario a MainApp
+            app = MainApp(user_name, user_role)  # Pasar el nombre de usuario y el rol a MainApp
             app.mainloop()
+
+
 
 
 def on_entry_change(event, entry):

@@ -11,7 +11,7 @@ import os
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
 
-def main(root):
+def main(root, user_role):
     # Establecer la conexión con PostgreSQL
     conn = psycopg2.connect(
         user="postgres",
@@ -290,8 +290,8 @@ def main(root):
 
     # Definir el Treeview para mostrar la tabla
     columns = (
-    "ID", "Tipo de Siembra", "Ubicación", "Planta", "Tipo de Lechuga", "Num h", "AF", "H", "Semana", "Nº Siembra",
-    "Observaciones", "Foto Nombre", "Foto Ruta", "Foto Descripción")
+        "ID", "Tipo de Siembra", "Ubicación", "Planta", "Tipo de Lechuga", "Num h", "AF", "H", "Semana", "Nº Siembra",
+        "Observaciones", "Foto Nombre", "Foto Ruta", "Foto Descripción")
     tabla = ttk.Treeview(frame, columns=columns, show="headings", height=15)  # Aumentar la altura a 15 filas
     tabla.grid(row=3, column=0, columnspan=4, padx=5, pady=5)
 
@@ -306,11 +306,12 @@ def main(root):
     frame_botones.pack(padx=10, pady=10)
 
     # Crear botones con tamaño personalizado
-    boton_eliminar = Button(frame_botones, text="Eliminar", command=eliminar_registro, width=20, height=2)
-    boton_eliminar.grid(row=0, column=0, padx=5, pady=5)
+    if user_role == "Super Administrador":
+        boton_eliminar = Button(frame_botones, text="Eliminar", command=eliminar_registro, width=20, height=2)
+        boton_eliminar.grid(row=0, column=0, padx=5, pady=5)
 
-    boton_actualizar = Button(frame_botones, text="Actualizar", command=actualizar_registro, width=20, height=2)
-    boton_actualizar.grid(row=0, column=1, padx=5, pady=5)
+        boton_actualizar = Button(frame_botones, text="Actualizar", command=actualizar_registro, width=20, height=2)
+        boton_actualizar.grid(row=0, column=1, padx=5, pady=5)
 
     boton_reporte = Button(frame_botones, text="Generar Reporte PDF", command=generar_reporte, width=25, height=2)
     boton_reporte.grid(row=0, column=2, padx=5, pady=5)
