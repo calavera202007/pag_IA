@@ -10,9 +10,10 @@ import ver_tabla
 import IA
 import inicio
 import Cuestionario
+import matplotlib.pyplot as plt
 
 
-####
+#######
 # Definición de la clase MainApp antes de su uso
 class MainApp(tk.Tk):
     def __init__(self, user_name):
@@ -200,9 +201,9 @@ class MainApp(tk.Tk):
                 ]
             }
 
-            # Crear un menú desplegable
-            selected_option = tk.StringVar(value="Seleccionar")
-            dropdown = ttk.OptionMenu(main_frame, selected_option, "Seleccionar", *opciones_menu.keys())
+            # Crear un menú desplegable con "Todos" como opción seleccionada por defecto
+            selected_option = tk.StringVar(value="Todos")
+            dropdown = ttk.OptionMenu(main_frame, selected_option, "Todos", *opciones_menu.keys())
             dropdown.pack(pady=10)
 
             # Función para actualizar los gráficos mostrados según la selección del menú desplegable
@@ -222,11 +223,22 @@ class MainApp(tk.Tk):
 
                     for j in range(2):
                         if i + j < len(funciones_graficos):
-                            graph_frame = ttk.Frame(row_frame, width=570, height=470)
+                            # Verificar si la opción seleccionada es "Regresión Polynomial" para ajustar el tamaño
+                            if selected_option.get() == "Regresión Polynomial":
+                                graph_frame = ttk.Frame(row_frame, width=1140, height=940)  # Duplicar tamaño
+                            else:
+                                graph_frame = ttk.Frame(row_frame, width=570, height=470)  # Tamaño estándar
+
                             graph_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=4)
                             graph_frame.pack_propagate(False)
 
                             funciones_graficos[i + j](graph_frame, self.main_content_widgets)
+
+                            # Asegurarse de cerrar la figura para liberar memoria
+                            plt.close('all')
+
+            # Llamar a la función para actualizar gráficos inicialmente con la opción "Todos"
+            actualizar_graficos()
 
             # Llamar a la función para actualizar gráficos al cambiar la selección del menú desplegable
             selected_option.trace_add("write", actualizar_graficos)
