@@ -95,11 +95,32 @@ def main(root, user_role):
                 cur.execute('SELECT "PKIdDatos" FROM "Hidroponia"."TBDatos" WHERE "FKIdLechuga" = %s', (lechuga_id,))
                 datos_ids = cur.fetchall()
 
-                # Eliminar registros en "TBReporte"
+                # Eliminar registros en "TBReporte" y "TBFoto"
                 for datos_id in datos_ids:
+                    # Obtener el ID y la Ruta de "TBFoto" relacionada a "TBReporte"
+                    cur.execute(
+                        'SELECT "FKIdFoto", "Ruta" FROM "Hidroponia"."TBFoto" F JOIN "Hidroponia"."TBReporte" R ON F."PKIdFoto" = R."FKIdFoto" WHERE R."FKIdDatos" = %s',
+                        (datos_id,))
+                    fotos = cur.fetchall()
+
+                    # Eliminar registros en "TBReporte" antes de eliminar fotos para evitar violación de clave foránea
                     cur.execute('DELETE FROM "Hidroponia"."TBReporte" WHERE "FKIdDatos" = %s', (datos_id,))
                     conn.commit()
                     print(f"Registros eliminados en TBReporte para FKIdDatos={datos_id}")  # Depuración
+
+                    # Eliminar archivos de fotos del sistema de archivos y registros en "TBFoto"
+                    for foto_id, ruta in fotos:
+                        if ruta and os.path.exists(ruta):
+                            try:
+                                os.remove(ruta)
+                                print(f"Foto eliminada: {ruta}")  # Depuración
+                            except Exception as e:
+                                print(f"Error al eliminar la foto: {ruta}. Error: {e}")  # Depuración
+
+                        # Eliminar registro en "TBFoto"
+                        cur.execute('DELETE FROM "Hidroponia"."TBFoto" WHERE "PKIdFoto" = %s', (foto_id,))
+                        conn.commit()
+                        print(f"Registro eliminado en TBFoto para PKIdFoto={foto_id}")  # Depuración
 
                 # Eliminar registros en "TBDatos"
                 cur.execute('DELETE FROM "Hidroponia"."TBDatos" WHERE "FKIdLechuga" = %s', (lechuga_id,))
@@ -114,6 +135,8 @@ def main(root, user_role):
                 show_data()
         except IndexError:
             messagebox.showwarning("Advertencia", "Por favor selecciona un registro primero.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Ocurrió un error al eliminar el registro: {e}")
 
     # Función para actualizar un registro
     def actualizar_registro():
